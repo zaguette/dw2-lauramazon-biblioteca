@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Biblioteca Escolar</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="logo.png" alt="Logo Biblioteca Escolar" class="logo" aria-label="Logo Biblioteca Escolar">
+            <h1>Biblioteca Escolar</h1>
+            <input type="search" id="search-bar" placeholder="Buscar por título ou autor..." aria-label="Buscar livros">
+        </div>
+        <nav class="main-nav">
+            <button class="nav-btn" id="nav-catalogo" aria-label="Ir para catálogo" type="button">Catálogo</button>
+            <button class="nav-btn" id="nav-gerenciar" aria-label="Ir para gerenciar" type="button">Gerenciar</button>
+            <button class="nav-btn" id="nav-relatorios" aria-label="Ir para relatórios" type="button">Relatórios</button>
+        </nav>
+    </header>
+    <div class="main-layout">
+        <aside class="sidebar" aria-label="Filtros de livros">
+            <h2>Filtros</h2>
+            <div class="filter-group">
+                <label for="filter-genre">Gênero:</label>
+                <select id="filter-genre">
+                    <option value="">Todos</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Aventura">Aventura</option>
+                    <option value="Fantasia">Fantasia</option>
+                    <option value="Suspense">Suspense</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filter-year">Ano:</label>
+                <input type="number" id="filter-year" min="1900" max="2025" placeholder="Ano">
+            </div>
+            <div class="filter-group">
+                <label for="filter-status">Status:</label>
+                <select id="filter-status">
+                    <option value="">Todos</option>
+                    <option value="disponível">Disponível</option>
+                    <option value="emprestado">Emprestado</option>
+                </select>
+            </div>
+        </aside>
+        <main class="content-area">
+            <!-- Catálogo (home) -->
+            <section id="sec-catalogo" class="book-list" aria-label="Lista de livros">
+                <!-- Cards de livros serão inseridos aqui via JS -->
+                <button class="button" id="add-book-btn" aria-label="Adicionar novo livro" accesskey="n">Novo Livro</button>
+            </section>
+            <!-- Gerenciar -->
+            <section id="sec-gerenciar" class="form-container" aria-label="Gerenciar livros" hidden>
+                <h2>Cadastro/Edição de Livro</h2>
+                <form id="form-novo-livro" autocomplete="off">
+                    <div class="form-group">
+                        <label for="titulo">Título*</label>
+                        <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="90" aria-label="Título do livro">
+                        <span id="titulo-erro" class="erro" style="display:none;color:#F59E0B;">Título já existe!</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="autor">Autor*</label>
+                        <input type="text" id="autor" name="autor" required aria-label="Autor do livro">
+                    </div>
+                    <div class="form-group">
+                        <label for="ano">Ano*</label>
+                        <input type="number" id="ano" name="ano" required min="1900" max="2025" aria-label="Ano de publicação">
+                    </div>
+                    <div class="form-group">
+                        <label for="genero">Gênero</label>
+                        <select id="genero" name="genero" aria-label="Gênero do livro">
+                            <option value="Romance">Romance</option>
+                            <option value="Aventura">Aventura</option>
+                            <option value="Fantasia">Fantasia</option>
+                            <option value="Suspense">Suspense</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="isbn">ISBN</label>
+                        <input type="text" id="isbn" name="isbn" aria-label="ISBN do livro">
+                    </div>
+                    <div class="form-group">
+                        <label for="status">Status*</label>
+                        <select id="status" name="status" required aria-label="Status do livro">
+                            <option value="disponível">Disponível</option>
+                            <option value="emprestado">Emprestado</option>
+                        </select>
+                    </div>
+                    <input type="submit" class="button" value="Salvar">
+                    <button type="button" class="button" id="close-modal-novo-livro">Cancelar</button>
+                </form>
+            </section>
+            <!-- Relatórios -->
+            <section id="sec-relatorios" class="report-container" aria-label="Relatórios de livros" hidden>
+                <h2>Relatórios</h2>
+                <button class="button" id="export-csv" aria-label="Exportar CSV">Exportar CSV</button>
+                <button class="button" id="export-json" aria-label="Exportar JSON">Exportar JSON</button>
+                <div id="report-output"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Empréstimo/Devolução -->
+    <div id="modal-emprestimo" class="modal" aria-modal="true" aria-labelledby="modal-emprestimo-title" hidden>
+        <div class="modal-content">
+            <h2 id="modal-emprestimo-title">Empréstimo/Devolução</h2>
+            <form id="form-emprestimo">
+                <div class="form-group">
+                    <label for="emprestimo-status">Status</label>
+                    <select id="emprestimo-status" name="emprestimo-status">
+                        <option value="disponível">Disponível</option>
+                        <option value="emprestado">Emprestado</option>
+                    </select>
+                </div>
+                <input type="submit" class="button" value="Confirmar">
+                <button type="button" class="button" id="close-modal-emprestimo">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+    // Alterna visibilidade das seções ao clicar nos botões do menu
+    function mostrarSecao(secaoId) {
+        document.getElementById('sec-catalogo').hidden = true;
+        document.getElementById('sec-gerenciar').hidden = true;
+        document.getElementById('sec-relatorios').hidden = true;
+        document.getElementById(secaoId).hidden = false;
+    }
+
+    // Inicialmente mostra catálogo
+    mostrarSecao('sec-catalogo');
+
+    document.getElementById('nav-catalogo').onclick = function() {
+        mostrarSecao('sec-catalogo');
+    };
+    document.getElementById('nav-gerenciar').onclick = function() {
+        mostrarSecao('sec-gerenciar');
+    };
+    document.getElementById('nav-relatorios').onclick = function() {
+        mostrarSecao('sec-relatorios');
+    };
+
+    // Validação extra: impedir título duplicado no array local antes do envio
+    document.getElementById('form-novo-livro').addEventListener('submit', function(e) {
+        const titulo = document.getElementById('titulo').value.trim().toLowerCase();
+        // Supondo que window.livros seja o array local de livros
+        if (window.livros && window.livros.some(livro => livro.titulo.toLowerCase() === titulo)) {
+            e.preventDefault();
+            document.getElementById('titulo-erro').style.display = 'block';
+            document.getElementById('titulo').focus();
+        } else {
+            document.getElementById('titulo-erro').style.display = 'none';
+        }
+    });
+    </script>
+</body>
+</html>
