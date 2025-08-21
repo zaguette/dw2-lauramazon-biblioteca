@@ -49,6 +49,7 @@
             <section id="sec-catalogo" class="book-list" aria-label="Lista de livros">
                 <!-- Cards de livros serão inseridos aqui via JS -->
                 <button class="button" id="add-book-btn" aria-label="Adicionar novo livro" accesskey="n">Novo Livro</button>
+                <button class="button" id="open-emprestimo-btn" aria-label="Abrir modal de Empréstimo/Devolução">Empréstimo/Devolução</button>
             </section>
             <!-- Gerenciar -->
             <section id="sec-gerenciar" class="form-container" aria-label="Gerenciar livros" hidden>
@@ -140,6 +141,15 @@
     };
     document.getElementById('nav-relatorios').onclick = function() {
         mostrarSecao('sec-relatorios');
+    };
+
+    // Abrir modal de Empréstimo/Devolução só quando clicar no botão
+    document.getElementById('open-emprestimo-btn').onclick = function() {
+        document.getElementById('modal-emprestimo').hidden = false;
+    };
+    // Fechar modal
+    document.getElementById('close-modal-emprestimo').onclick = function() {
+        document.getElementById('modal-emprestimo').hidden = true;
     };
 
     // Validação extra: impedir título duplicado no array local antes do envio
