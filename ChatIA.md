@@ -112,3 +112,12 @@ duplicado no array local antes da chamada.
 ### Conversation 7: ajustes
 os botoes catalogo, gerenciar e relatorio nao estao clicaveis e nem abrindo outras abas com suas funcos
 
+### mudando para o chat gpt
+
+eu quero deixar meu site mais bonito, mantendo as cores usadas e usando como logo da biblioteca o simbolo do UNASP( a universidade adventista), alem disso quero que cada livro adicionado tenha uma capa a mostra no site que quando clica abre uma aba c suas respectivas informacoes: autor, titulo, numero de paginas, ano de publicacao, isbn, genero e disponibilidade, vc consegue fazer isso?
+
+me mande os 3 codigod com as atualizacoes pfvr, tambem quero que seja possivel quue a capa sja adicionada no proprio site
+
+o simbolo do unasp nao esta aparecendo e a aba da capa ja fica aberta impossibilitando que o usuario navegue nas outras opcoes do site, quero que as capas e suas informacoes so aparecam ao abrir a aba catalogo
+
+esta bem mais bonito porem o botao de fechar a aba n esta funcionando corretamente, impedindo de usar o resto do site

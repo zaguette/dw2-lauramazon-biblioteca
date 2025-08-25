@@ -2,22 +2,24 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Biblioteca Escolar</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <header>
         <div class="header-content">
-            <img src="logo.png" alt="Logo Biblioteca Escolar" class="logo" aria-label="Logo Biblioteca Escolar">
+            <img src="https://via.placeholder.com/50/00274d/ffffff?text=LS" alt="Logo Biblioteca" class="logo" aria-label="Logo Biblioteca Escolar">
             <h1>Biblioteca Escolar</h1>
             <input type="search" id="search-bar" placeholder="Buscar por título ou autor..." aria-label="Buscar livros">
         </div>
         <nav class="main-nav">
-            <button class="nav-btn" id="nav-catalogo" aria-label="Ir para catálogo" type="button">Catálogo</button>
+            <button class="nav-btn active" id="nav-catalogo" aria-label="Ir para catálogo" type="button">Catálogo</button>
             <button class="nav-btn" id="nav-gerenciar" aria-label="Ir para gerenciar" type="button">Gerenciar</button>
             <button class="nav-btn" id="nav-relatorios" aria-label="Ir para relatórios" type="button">Relatórios</button>
         </nav>
     </header>
+
     <div class="main-layout">
         <aside class="sidebar" aria-label="Filtros de livros">
             <h2>Filtros</h2>
@@ -43,22 +45,33 @@
                     <option value="emprestado">Emprestado</option>
                 </select>
             </div>
+            <button class="button" id="aplicar-filtros">Aplicar Filtros</button>
+            <button class="button" id="limpar-filtros" style="background: #666; margin-top: 10px;">Limpar Filtros</button>
         </aside>
+
         <main class="content-area">
-            <!-- Catálogo (home) -->
+            <!-- Catálogo -->
             <section id="sec-catalogo" class="book-list" aria-label="Lista de livros">
-                <!-- Cards de livros serão inseridos aqui via JS -->
-                <button class="button" id="add-book-btn" aria-label="Adicionar novo livro" accesskey="n">Novo Livro</button>
-                <button class="button" id="open-emprestimo-btn" aria-label="Abrir modal de Empréstimo/Devolução">Empréstimo/Devolução</button>
+                <div id="book-grid" class="book-grid">
+                    <div class="empty-state">
+                        <p>Nenhum livro encontrado. Adicione um novo livro ou ajuste os filtros.</p>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="button" id="add-book-btn" aria-label="Adicionar novo livro" accesskey="n">Novo Livro</button>
+                    <button class="button" id="open-emprestimo-btn" aria-label="Abrir modal de Empréstimo/Devolução">Empréstimo/Devolução</button>
+                </div>
             </section>
+
             <!-- Gerenciar -->
             <section id="sec-gerenciar" class="form-container" aria-label="Gerenciar livros" hidden>
                 <h2>Cadastro/Edição de Livro</h2>
                 <form id="form-novo-livro" autocomplete="off">
+                    <input type="hidden" id="livro-id" value="">
                     <div class="form-group">
                         <label for="titulo">Título*</label>
                         <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="90" aria-label="Título do livro">
-                        <span id="titulo-erro" class="erro" style="display:none;color:#F59E0B;">Título já existe!</span>
+                        <span id="titulo-erro" class="erro" style="display:none;">Título já existe!</span>
                     </div>
                     <div class="form-group">
                         <label for="autor">Autor*</label>
@@ -67,6 +80,10 @@
                     <div class="form-group">
                         <label for="ano">Ano*</label>
                         <input type="number" id="ano" name="ano" required min="1900" max="2025" aria-label="Ano de publicação">
+                    </div>
+                    <div class="form-group">
+                        <label for="paginas">Número de Páginas</label>
+                        <input type="number" id="paginas" name="paginas" aria-label="Número de páginas do livro">
                     </div>
                     <div class="form-group">
                         <label for="genero">Gênero</label>
@@ -82,88 +99,97 @@
                         <input type="text" id="isbn" name="isbn" aria-label="ISBN do livro">
                     </div>
                     <div class="form-group">
+                        <label for="capa">Capa do Livro (URL)</label>
+                        <input type="text" id="capa" name="capa" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
                         <label for="status">Status*</label>
                         <select id="status" name="status" required aria-label="Status do livro">
                             <option value="disponível">Disponível</option>
                             <option value="emprestado">Emprestado</option>
                         </select>
                     </div>
-                    <input type="submit" class="button" value="Salvar">
-                    <button type="button" class="button" id="close-modal-novo-livro">Cancelar</button>
+                    <div>
+                        <input type="submit" class="button" value="Salvar" id="salvar-livro">
+                        <button type="button" class="button" id="cancelar-edicao" style="background: #666;">Cancelar</button>
+                    </div>
                 </form>
             </section>
+
             <!-- Relatórios -->
             <section id="sec-relatorios" class="report-container" aria-label="Relatórios de livros" hidden>
                 <h2>Relatórios</h2>
-                <button class="button" id="export-csv" aria-label="Exportar CSV">Exportar CSV</button>
-                <button class="button" id="export-json" aria-label="Exportar JSON">Exportar JSON</button>
-                <div id="report-output"></div>
+                <div class="action-buttons">
+                    <button class="button" id="export-csv" aria-label="Exportar CSV">Exportar CSV</button>
+                    <button class="button" id="export-json" aria-label="Exportar JSON">Exportar JSON</button>
+                </div>
+                <div id="report-output">
+                    <h3>Estatísticas da Biblioteca</h3>
+                    <p>Total de Livros: <span id="total-livros">0</span></p>
+                    <p>Livros Disponíveis: <span id="livros-disponiveis">0</span></p>
+                    <p>Livros Emprestados: <span id="livros-emprestados">0</span></p>
+                    <p>Livros por Gênero:</p>
+                    <ul id="livros-por-genero"></ul>
+                </div>
             </section>
         </main>
     </div>
 
-    <!-- Modal Empréstimo/Devolução -->
-    <div id="modal-emprestimo" class="modal" aria-modal="true" aria-labelledby="modal-emprestimo-title" hidden>
+    <!-- Modal Detalhes -->
+    <div id="modal-detalhes" class="modal" hidden>
         <div class="modal-content">
-            <h2 id="modal-emprestimo-title">Empréstimo/Devolução</h2>
-            <form id="form-emprestimo">
-                <div class="form-group">
-                    <label for="emprestimo-status">Status</label>
-                    <select id="emprestimo-status" name="emprestimo-status">
-                        <option value="disponível">Disponível</option>
-                        <option value="emprestado">Emprestado</option>
-                    </select>
-                </div>
-                <input type="submit" class="button" value="Confirmar">
-                <button type="button" class="button" id="close-modal-emprestimo">Cancelar</button>
-            </form>
+            <button class="close-modal">&times;</button>
+            <img id="modal-capa" src="" alt="Capa do livro">
+            <h2 id="modal-titulo"></h2>
+            <p><strong>Autor:</strong> <span id="modal-autor"></span></p>
+            <p><strong>Páginas:</strong> <span id="modal-paginas"></span></p>
+            <p><strong>Ano:</strong> <span id="modal-ano"></span></p>
+            <p><strong>ISBN:</strong> <span id="modal-isbn"></span></p>
+            <p><strong>Gênero:</strong> <span id="modal-genero"></span></p>
+            <p><strong>Status:</strong> <span id="modal-status"></span></p>
+            <div class="action-buttons">
+                <button class="button btn-editar" id="editar-livro">Editar</button>
+                <button class="button btn-excluir" id="excluir-livro">Excluir</button>
+                <button class="button btn-emprestar" id="emprestar-livro" style="display: none;">Emprestar</button>
+                <button class="button btn-devolver" id="devolver-livro" style="display: none;">Devolver</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Empréstimo -->
+    <div id="modal-emprestimo" class="modal" hidden>
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <h2>Gerenciar Empréstimo</h2>
+            <div class="form-group">
+                <label for="livro-emprestimo">Selecionar Livro:</label>
+                <select id="livro-emprestimo">
+                    <option value="">Selecione um livro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="nome-pessoa">Nome da Pessoa:</label>
+                <input type="text" id="nome-pessoa" placeholder="Digite o nome">
+            </div>
+            <div class="form-group">
+                <label for="data-emprestimo">Data de Empréstimo:</label>
+                <input type="date" id="data-emprestimo">
+            </div>
+            <div class="form-group">
+                <label for="data-devolucao">Data de Devolução:</label>
+                <input type="date" id="data-devolucao">
+            </div>
+            <div class="action-buttons">
+                <button class="button" id="confirmar-emprestimo">Registrar Empréstimo</button>
+                <button class="button" id="confirmar-devolucao">Registrar Devolução</button>
+            </div>
+            <div id="historico-emprestimos" style="margin-top: 20px;">
+                <h3>Histórico de Empréstimos</h3>
+                <ul id="lista-emprestimos"></ul>
+            </div>
         </div>
     </div>
 
     <script src="js/main.js"></script>
-    <script>
-    // Alterna visibilidade das seções ao clicar nos botões do menu
-    function mostrarSecao(secaoId) {
-        document.getElementById('sec-catalogo').hidden = true;
-        document.getElementById('sec-gerenciar').hidden = true;
-        document.getElementById('sec-relatorios').hidden = true;
-        document.getElementById(secaoId).hidden = false;
-    }
-
-    // Inicialmente mostra catálogo
-    mostrarSecao('sec-catalogo');
-
-    document.getElementById('nav-catalogo').onclick = function() {
-        mostrarSecao('sec-catalogo');
-    };
-    document.getElementById('nav-gerenciar').onclick = function() {
-        mostrarSecao('sec-gerenciar');
-    };
-    document.getElementById('nav-relatorios').onclick = function() {
-        mostrarSecao('sec-relatorios');
-    };
-
-    // Abrir modal de Empréstimo/Devolução só quando clicar no botão
-    document.getElementById('open-emprestimo-btn').onclick = function() {
-        document.getElementById('modal-emprestimo').hidden = false;
-    };
-    // Fechar modal
-    document.getElementById('close-modal-emprestimo').onclick = function() {
-        document.getElementById('modal-emprestimo').hidden = true;
-    };
-
-    // Validação extra: impedir título duplicado no array local antes do envio
-    document.getElementById('form-novo-livro').addEventListener('submit', function(e) {
-        const titulo = document.getElementById('titulo').value.trim().toLowerCase();
-        // Supondo que window.livros seja o array local de livros
-        if (window.livros && window.livros.some(livro => livro.titulo.toLowerCase() === titulo)) {
-            e.preventDefault();
-            document.getElementById('titulo-erro').style.display = 'block';
-            document.getElementById('titulo').focus();
-        } else {
-            document.getElementById('titulo-erro').style.display = 'none';
-        }
-    });
-    </script>
 </body>
 </html>
