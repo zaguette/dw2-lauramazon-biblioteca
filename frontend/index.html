@@ -8,17 +8,18 @@
 </head>
 <body>
     <header>
-        <div class="header-content">
-            <img src="https://via.placeholder.com/50/00274d/ffffff?text=LS" alt="Logo Biblioteca" class="logo" aria-label="Logo Biblioteca Escolar">
+        <div class="header-content header-centered">
             <h1>Biblioteca Escolar</h1>
             <input type="search" id="search-bar" placeholder="Buscar por título ou autor..." aria-label="Buscar livros">
         </div>
-        <nav class="main-nav">
-            <button class="nav-btn active" id="nav-catalogo" aria-label="Ir para catálogo" type="button">Catálogo</button>
-            <button class="nav-btn" id="nav-gerenciar" aria-label="Ir para gerenciar" type="button">Gerenciar</button>
-            <button class="nav-btn" id="nav-relatorios" aria-label="Ir para relatórios" type="button">Relatórios</button>
-        </nav>
     </header>
+
+    <!-- Nav centralizada logo abaixo do header -->
+    <nav class="main-nav nav-centered nav-below-header" role="navigation" aria-label="Navegação principal">
+        <button class="nav-btn active" id="nav-catalogo" aria-label="Ir para catálogo" type="button">Catálogo</button>
+        <button class="nav-btn" id="nav-gerenciar" aria-label="Ir para gerenciar" type="button">Gerenciar</button>
+        <button class="nav-btn" id="nav-relatorios" aria-label="Ir para relatórios" type="button">Relatórios</button>
+    </nav>
 
     <div class="main-layout">
         <aside class="sidebar" aria-label="Filtros de livros">
@@ -66,55 +67,64 @@
             <!-- Gerenciar -->
             <section id="sec-gerenciar" class="form-container" aria-label="Gerenciar livros" hidden>
                 <h2>Cadastro/Edição de Livro</h2>
-                <form id="form-novo-livro" autocomplete="off">
-                    <input type="hidden" id="livro-id" value="">
-                    <div class="form-group">
-                        <label for="titulo">Título*</label>
-                        <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="90" aria-label="Título do livro">
-                        <span id="titulo-erro" class="erro" style="display:none;">Título já existe!</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="autor">Autor*</label>
-                        <input type="text" id="autor" name="autor" required aria-label="Autor do livro">
-                    </div>
-                    <div class="form-group">
-                        <label for="ano">Ano*</label>
-                        <input type="number" id="ano" name="ano" required min="1900" max="2025" aria-label="Ano de publicação">
-                    </div>
-                    <div class="form-group">
-                        <label for="paginas">Número de Páginas</label>
-                        <input type="number" id="paginas" name="paginas" aria-label="Número de páginas do livro">
-                    </div>
-                    <div class="form-group">
-                        <label for="genero">Gênero</label>
-                        <select id="genero" name="genero" aria-label="Gênero do livro">
-                            <option value="Romance">Romance</option>
-                            <option value="Aventura">Aventura</option>
-                            <option value="Fantasia">Fantasia</option>
-                            <option value="Suspense">Suspense</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="isbn">ISBN</label>
-                        <input type="text" id="isbn" name="isbn" aria-label="ISBN do livro">
-                    </div>
-                    <div class="form-group">
-                        <label for="capa">Capa do Livro (URL)</label>
-                        <input type="text" id="capa" name="capa" placeholder="https://...">
-                    </div>
-                    <div class="form-group">
-                        <label for="status">Status*</label>
-                        <select id="status" name="status" required aria-label="Status do livro">
-                            <option value="disponível">Disponível</option>
-                            <option value="emprestado">Emprestado</option>
-                        </select>
-                    </div>
-                    <div>
-                        <input type="submit" class="button" value="Salvar" id="salvar-livro">
-                        <button type="button" class="button" id="cancelar-edicao" style="background: #666;">Cancelar</button>
-                    </div>
-                </form>
+                <p>Use o modal "Novo Livro" para adicionar ou editar livros.</p>
             </section>
+
+            <!-- Modal Novo Livro -->
+            <div id="modal-novo-livro" class="modal" hidden>
+                <div class="modal-content">
+                    <button class="close-modal">&times;</button>
+                    <h2>Novo Livro</h2>
+                    <form id="form-novo-livro" autocomplete="off">
+                        <input type="hidden" id="livro-id" value="">
+                        <div class="form-group">
+                            <label for="titulo">Título*</label>
+                            <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="90" aria-label="Título do livro">
+                            <span id="titulo-erro" class="erro" style="display:none;">Título já existe!</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="autor">Autor*</label>
+                            <input type="text" id="autor" name="autor" required aria-label="Autor do livro">
+                        </div>
+                        <div class="form-group">
+                            <label for="ano">Ano*</label>
+                            <input type="number" id="ano" name="ano" required min="1900" max="2025" aria-label="Ano de publicação">
+                        </div>
+                        <div class="form-group">
+                            <label for="paginas">Número de Páginas</label>
+                            <input type="number" id="paginas" name="paginas" aria-label="Número de páginas do livro">
+                        </div>
+                        <div class="form-group">
+                            <label for="genero">Gênero</label>
+                            <select id="genero" name="genero" aria-label="Gênero do livro">
+                                <option value="Romance">Romance</option>
+                                <option value="Aventura">Aventura</option>
+                                <option value="Fantasia">Fantasia</option>
+                                <option value="Suspense">Suspense</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="isbn">ISBN</label>
+                            <input type="text" id="isbn" name="isbn" aria-label="ISBN do livro">
+                        </div>
+                        <div class="form-group">
+                            <label for="capa">Capa do Livro (URL)</label>
+                            <input type="text" id="capa" name="capa" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label for="status">Status*</label>
+                            <select id="status" name="status" required aria-label="Status do livro">
+                                <option value="disponível">Disponível</option>
+                                <option value="emprestado">Emprestado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <input type="submit" class="button" value="Salvar" id="salvar-livro">
+                            <button type="button" class="button" id="cancelar-edicao" style="background: #666;">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
             <!-- Relatórios -->
             <section id="sec-relatorios" class="report-container" aria-label="Relatórios de livros" hidden>

@@ -121,3 +121,19 @@ me mande os 3 codigod com as atualizacoes pfvr, tambem quero que seja possivel q
 o simbolo do unasp nao esta aparecendo e a aba da capa ja fica aberta impossibilitando que o usuario navegue nas outras opcoes do site, quero que as capas e suas informacoes so aparecam ao abrir a aba catalogo
 
 esta bem mais bonito porem o botao de fechar a aba n esta funcionando corretamente, impedindo de usar o resto do site
+
+### Mensagem do Usuário em 10 de Setembro de 2025
+O modal "Gerenciar Empréstimo" está abrindo automaticamente assim que carrego a página. Quero que ele só apareça quando eu clicar no botão "Gerenciar".
+
+Além disso, o botão "X" de fechar não está funcionando. Preciso que ele feche o modal corretamente quando clicado.
+
+Por favor, ajuste o código para:
+
+Inicialmente deixar o modal escondido (display: none).
+
+Abrir o modal apenas quando o botão "Gerenciar" for clicado.
+
+Fechar o modal quando clicar no "X" ou fora da caixa do modal.
+
+### Resposta do Copilot
+O código foi ajustado para que o modal "Gerenciar Empréstimo" fique inicialmente escondido e só seja exibido ao clicar no botão "Gerenciar". Além disso, o botão "X" agora fecha o modal corretamente, assim como clicar fora da caixa do modal. Se precisar de mais ajustes, é só avisar!

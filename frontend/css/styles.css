@@ -1,219 +1,256 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f4f4f4;
+/* Header sizing and layout fixes + nicer visual style */
+:root {
+    --header-height: 120px;
+    --nav-height: 56px;
+    --brand-color: #2f5d3b; /* verde floresta */
+    --accent-color: #6b4f3b; /* marrom aconchegante */
+    --muted-bg: #f6f3ef;
 }
 
+/* Background with subtle wood texture using SVG data URI */
+body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    margin: 0;
+    background-color: var(--muted-bg);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' x2='1'%3E%3Cstop offset='0' stop-color='%23f6f3ef'/%3E%3Cstop offset='1' stop-color='%23efe9df'/%3E%3C/linearGradient%3E%3Cpattern id='p' patternUnits='userSpaceOnUse' width='200' height='200'%3E%3Crect width='200' height='200' fill='url(%23g)'/%3E%3Cpath d='M0 30 C40 10, 160 10, 200 30 L200 40 C160 20, 40 20, 0 40Z' fill='%236b4f3b' opacity='0.02'/%3E%3Cpath d='M0 80 C40 60, 160 60, 200 80 L200 90 C160 70, 40 70, 0 90Z' fill='%236b4f3b' opacity='0.02'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23p)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: auto;
+    padding-top: calc(var(--header-height) + var(--nav-height) + 24px); /* espaço para header + nav */
+}
+
+/* Header and nav spacing */
 header {
-    background: #00274d;
-    color: white;
-    padding: 10px 20px;
+    background: linear-gradient(180deg, var(--brand-color), #265034);
+    color: #fff8f0;
+    padding: 18px 30px;
     display: flex;
     flex-direction: column;
+    position: fixed; /* header fixo */
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    z-index: 1200;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 
-.header-content {
+/* Nav placed below header */
+.nav-below-header {
+    position: relative; /* was fixed - now in normal flow */
+    top: auto;
+    left: auto;
+    right: auto;
+    height: var(--nav-height);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    z-index: 1100;
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(1px);
+    padding: 8px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
-.logo {
-    height: 50px;
-    margin-right: 15px;
+/* Adjust body spacing now nav is not fixed */
+body {
+    padding-top: calc(var(--header-height) + 20px); /* smaller since nav occupies normal flow */
 }
 
-#search-bar {
-    padding: 8px 12px;
-    border-radius: 20px;
-    border: none;
-    min-width: 250px;
-}
-
-.main-nav {
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
-}
-
-.nav-btn {
-    background: #004080;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.3s;
-}
-
-.nav-btn:hover, .nav-btn.active {
-    background: #0059b3;
-}
-
+/* Ensure main layout not hidden under header */
 .main-layout {
+    margin-top: 6px;
     display: flex;
-    min-height: calc(100vh - 130px);
+    min-height: calc(100vh - var(--header-height) - 40px);
 }
 
-.sidebar {
-    width: 250px;
-    background: #e8e8e8;
-    padding: 20px;
-    border-right: 1px solid #ccc;
-}
-
-.filter-group {
-    margin-bottom: 15px;
-}
-
-.filter-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.filter-group select, .filter-group input {
-    width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-
-.content-area {
-    flex: 1;
-    padding: 20px;
-    position: relative;
-}
-
+/* Book grid: 5 columns desktop */
 .book-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 18px;
     margin-bottom: 20px;
 }
 
 .book-card {
     cursor: pointer;
     text-align: center;
-    transition: transform 0.2s;
-    background: white;
-    border-radius: 8px;
-    padding: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.book-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    transition: transform 0.18s, box-shadow 0.18s;
+    background: linear-gradient(180deg,#fffefc,#fbfaf8);
+    border: 1px solid rgba(107,79,59,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .book-cover {
-    width: 150px;
-    height: 220px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4; /* mantém proporção de capa */
     object-fit: cover;
     border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    max-height: 260px;
 }
 
-.book-title {
-    margin-top: 8px;
-    font-size: 14px;
-    font-weight: bold;
-    height: 40px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+/* Align action buttons inside catalog section to the right */
+#sec-catalogo .action-buttons {
+    justify-content: flex-end;
+    padding-right: 8px;
+    margin-top: 12px;
 }
 
-.book-status {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    margin-top: 5px;
+/* Keep other action-buttons (e.g., in modals) centered */
+.modal .action-buttons, .report-container .action-buttons {
+    justify-content: center;
 }
 
-.status-disponivel {
-    background: #4CAF50;
-    color: white;
+/* Responsive breakpoints */
+@media (max-width: 1200px) {
+    .book-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 900px) {
+    .book-grid { grid-template-columns: repeat(3, 1fr); }
+    :root { --nav-height: 64px; }
+}
+@media (max-width: 600px) {
+    .book-grid { grid-template-columns: repeat(2, 1fr); }
+    header { height: calc(var(--header-height) + 20px); }
+    .nav-below-header { position: static; top: auto; }
+}
+@media (max-width: 420px) {
+    .book-grid { grid-template-columns: repeat(1, 1fr); }
 }
 
-.status-emprestado {
-    background: #F44336;
-    color: white;
+/* Modal content with paper texture */
+.modal-content {
+    background-image: linear-gradient(180deg, #fffefc, #fbfaf8), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23faf6f0'/%3E%3Cpath d='M0 0 L200 0 L200 200 L0 200 Z' fill='none'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: cover;
 }
 
-.button {
-    background: #004080;
-    color: white;
+body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    margin: 0;
+    background: var(--muted-bg);
+    padding-top: calc(var(--header-height) + 10px); /* mais espaço para respiro */
+}
+
+header {
+    background: linear-gradient(180deg, var(--brand-color), #265034);
+    color: #fff8f0;
+    padding: 16px 30px;
+    display: flex;
+    flex-direction: column;
+    position: fixed; /* header fixo */
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    z-index: 1200;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+/* Centered header variant */
+.header-centered {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+}
+
+/* Nav centered under title */
+.nav-centered {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+#search-bar {
+    padding: 10px 14px;
+    border-radius: 999px;
     border: none;
-    padding: 10px 15px;
+    width: 70%;
+    max-width: 900px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Remove logo styles (no logo used) */
+.logo { display: none; }
+
+.main-nav {
+    margin-top: 8px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; /* permite que as "abas" quebrem linha sem sobreposição */
+}
+
+.nav-btn {
+    background: var(--accent-color);
+    color: #fff8f0;
+    border: none;
+    padding: 9px 14px;
     cursor: pointer;
-    border-radius: 4px;
-    margin-right: 10px;
-    transition: background 0.3s;
+    border-radius: 6px;
+    transition: background 0.25s, transform 0.12s;
+    white-space: nowrap;
 }
 
-.button:hover {
-    background: #0059b3;
+.nav-btn:hover, .nav-btn.active {
+    background: #845a3f;
+    transform: translateY(-1px);
 }
 
-.form-container {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    max-width: 600px;
-    margin: 0 auto;
+/* Ajustes na área principal para não ser ocultada pelo header */
+.main-layout {
+    margin-top: 6px;
+    display: flex;
+    min-height: calc(100vh - var(--header-height) - 40px);
 }
 
-.form-group {
-    margin-bottom: 15px;
+.sidebar {
+    width: 260px;
+    background: #fdfaf6;
+    padding: 22px;
+    border-right: 1px solid #e7e0d8;
+    box-shadow: 2px 0 6px rgba(0,0,0,0.03);
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+.content-area {
+    flex: 1;
+    padding: 24px;
+    position: relative;
 }
 
-.form-group input, .form-group select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-}
-
-.erro {
-    display: block;
-    color: #F59E0B;
-    font-size: 14px;
-    margin-top: 5px;
-}
-
+/* Make modals appear above fixed header */
 .modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.6);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 1400; /* maior que header para evitar sobreposição */
 }
 
 .modal-content {
     background: white;
     padding: 25px;
     border-radius: 10px;
-    max-width: 500px;
-    width: 90%;
+    max-width: 600px;
+    width: 92%;
     max-height: 90vh;
     overflow-y: auto;
     position: relative;
@@ -221,8 +258,8 @@ header {
 
 .close-modal {
     position: absolute;
-    top: 15px;
-    right: 25px;
+    top: 14px;
+    right: 18px;
     background: none;
     border: none;
     font-size: 28px;
@@ -230,81 +267,48 @@ header {
     color: #666;
 }
 
-.modal-content img {
-    max-width: 150px;
-    margin: 0 auto 15px;
-    display: block;
-    border-radius: 6px;
-}
-
-.report-container {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-#report-output {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-    justify-content: center;
-}
-
-.btn-editar {
-    background: #FF9800;
-}
-
-.btn-excluir {
-    background: #F44336;
-}
-
-.btn-emprestar, .btn-devolver {
-    background: #2196F3;
-}
-
-.empty-state {
+/* Slight visual improvements for cards and buttons */
+.book-card {
+    cursor: pointer;
     text-align: center;
-    padding: 40px;
-    color: #666;
+    transition: transform 0.18s, box-shadow 0.18s;
+    background: linear-gradient(180deg,#fffefc,#fbfaf8);
+    border: 1px solid rgba(107,79,59,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
+
+.book-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+
+.book-title { font-size: 14px; }
+.book-author { font-size: 13px; color: #444; margin: 6px 0 0; }
+.book-year { font-size: 12px; color: #666; margin: 4px 0; }
+
+.button {
+    background: var(--brand-color);
+    color: #fff8f0;
+    border: none;
+    padding: 9px 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    margin-right: 10px;
+    transition: background 0.3s, transform 0.12s;
+}
+
+.button:hover { background: #0059b3; transform: translateY(-1px); }
 
 @media (max-width: 768px) {
-    .main-layout {
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid #ccc;
-    }
-    
-    .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    #search-bar {
-        margin-top: 10px;
-        min-width: unset;
-        width: 100%;
-    }
-    
-    .book-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-    
-    .book-cover {
-        width: 120px;
-        height: 180px;
-    }
+    :root { --header-height: 150px; }
+    body { padding-top: var(--header-height); }
+
+    .main-layout { flex-direction: column; }
+    .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #ccc; }
+    .header-content { flex-direction: column; align-items: flex-start; gap: 10px; }
+    #search-bar { margin-top: 6px; min-width: unset; width: 100%; }
+    .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .book-cover { width: 120px; height: 180px; }
 }
