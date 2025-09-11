@@ -112,6 +112,10 @@
                             <input type="text" id="capa" name="capa" placeholder="https://...">
                         </div>
                         <div class="form-group">
+                            <label for="descricao">Descrição</label>
+                            <textarea id="descricao" name="descricao" rows="4" placeholder="Escreva uma breve descrição do livro"></textarea>
+                        </div>
+                        <div class="form-group">
                             <label for="status">Status*</label>
                             <select id="status" name="status" required aria-label="Status do livro">
                                 <option value="disponível">Disponível</option>
@@ -157,6 +161,10 @@
             <p><strong>ISBN:</strong> <span id="modal-isbn"></span></p>
             <p><strong>Gênero:</strong> <span id="modal-genero"></span></p>
             <p><strong>Status:</strong> <span id="modal-status"></span></p>
+            <div class="form-group">
+                <label><strong>Descrição:</strong></label>
+                <p id="modal-descricao" style="white-space: pre-wrap; margin-top:6px; color:#333;"></p>
+            </div>
             <div class="action-buttons">
                 <button class="button btn-editar" id="editar-livro">Editar</button>
                 <button class="button btn-excluir" id="excluir-livro">Excluir</button>
