@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.orm import Session
-from .models import Book
+from .models import Book, BookHistory
 from .database import get_db
 from pydantic import BaseModel
+from datetime import datetime
 
 router = APIRouter()
 
@@ -15,9 +16,16 @@ class BookCreate(BaseModel):
     capa: str | None = None
     status: str | None = 'disponível'
 
+class BorrowRequest(BaseModel):
+    nome: str
+    data_emprestimo: datetime | None = None
+    data_prev_devolucao: datetime | None = None
+
+class ReturnRequest(BaseModel):
+    data_devolucao: datetime | None = None
+
 @router.post('/books/')
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
-    # Map frontend fields to model fields
     db_book = Book(
         title=book.titulo or '',
         author=book.autor or '',
@@ -60,6 +68,16 @@ def read_book(book_id: int, db: Session = Depends(get_db)):
     book = db.query(Book).filter(Book.id == book_id).first()
     if book is None:
         raise HTTPException(status_code=404, detail='Book not found')
+    # incluir histórico de empréstimos no retorno
+    history = []
+    for h in book.history:
+        history.append({
+            'id': h.id,
+            'nome': h.nome,
+            'data_emprestimo': h.data_emprestimo.isoformat() if h.data_emprestimo else None,
+            'data_prev_devolucao': h.data_prev_devolucao.isoformat() if h.data_prev_devolucao else None,
+            'data_devolucao': h.data_devolucao.isoformat() if h.data_devolucao else None,
+        })
     return {
         'id': book.id,
         'titulo': book.title,
@@ -67,7 +85,8 @@ def read_book(book_id: int, db: Session = Depends(get_db)):
         'ano': book.year,
         'genero': book.genre,
         'isbn': book.isbn,
-        'status': 'disponível' if book.status else 'emprestado'
+        'status': 'disponível' if book.status else 'emprestado',
+        'history': history
     }
 
 @router.put('/books/{book_id}')
@@ -95,19 +114,43 @@ def delete_book(book_id: int, db: Session = Depends(get_db)):
     return {'detail': 'Book deleted'}
 
 @router.post('/books/{book_id}/borrow')
-def borrow_book(book_id: int, db: Session = Depends(get_db)):
+def borrow_book(book_id: int, payload: BorrowRequest = Body(...), db: Session = Depends(get_db)):
     book = db.query(Book).filter(Book.id == book_id).first()
-    if book is None or book.status != True:
+    if book is None:
+        raise HTTPException(status_code=404, detail='Book not found')
+    # regra de negócio: impedir empréstimo se já emprestado
+    if book.status == False:
         raise HTTPException(status_code=400, detail='Book not available for borrowing')
+
+    # criar entrada de histórico
+    data_emp = payload.data_emprestimo or datetime.utcnow()
+    hist = BookHistory(
+        book_id=book.id,
+        nome=payload.nome,
+        data_emprestimo=data_emp,
+        data_prev_devolucao=payload.data_prev_devolucao
+    )
+    db.add(hist)
+    # atualizar status do livro
     book.status = False
     db.commit()
-    return {'detail': 'borrowed'}
+    db.refresh(hist)
+    return {'detail': 'borrowed', 'history_id': hist.id}
 
 @router.post('/books/{book_id}/return')
-def return_book(book_id: int, db: Session = Depends(get_db)):
+def return_book(book_id: int, payload: ReturnRequest = Body(...), db: Session = Depends(get_db)):
     book = db.query(Book).filter(Book.id == book_id).first()
-    if book is None or book.status != False:
+    if book is None:
+        raise HTTPException(status_code=404, detail='Book not found')
+    if book.status == True:
         raise HTTPException(status_code=400, detail='Book not currently borrowed')
+
+    # localizar última entrada de historico sem data_devolucao
+    hist = db.query(BookHistory).filter(BookHistory.book_id == book.id, BookHistory.data_devolucao == None).order_by(BookHistory.id.desc()).first()
+    if hist is None:
+        raise HTTPException(status_code=404, detail='Active borrow record not found')
+
+    hist.data_devolucao = payload.data_devolucao or datetime.utcnow()
     book.status = True
     db.commit()
-    return {'detail': 'returned'}
+    return {'detail': 'returned', 'history_id': hist.id}

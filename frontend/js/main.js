@@ -528,24 +528,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-bar')?.addEventListener('input', () => applyFiltersAndRender(1));
 
     // Abrir modal Novo Livro pelo botão
-    const openNovoLivroBtn = document.getElementById('add-book-btn');
-    const modalNovoLivro = document.getElementById('modal-novo-livro');
-    if (openNovoLivroBtn && modalNovoLivro) {
-        openNovoLivroBtn.addEventListener('click', () => abrirModal(modalNovoLivro));
-        // atalho Alt+N
-        document.addEventListener('keydown', (e) => {
-            if (e.altKey && (e.key === 'n' || e.key === 'N')) {
-                abrirModal(modalNovoLivro);
-                e.preventDefault();
-            }
-        });
-    }
+    // (duplicata removida — referências já inicializadas anteriormente)
 
     // Abrir modal de empréstimo pelo botão na UI (se presente)
-    const openEmprestimoBtn = document.getElementById('open-emprestimo-btn');
-    if (openEmprestimoBtn) {
-        openEmprestimoBtn.addEventListener('click', () => abrirModal(modalEmprestimo));
-    }
+    // (duplicata removida — referência já inicializada anteriormente)
 
     // Ferramenta de relatórios (export CSV/JSON)
     document.getElementById('export-csv')?.addEventListener('click', () => {
@@ -706,6 +692,192 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- API sync (opcional) ---
+    window.apiEnabled = false;
+
+    async function detectApi() {
+        try {
+            const resp = await fetch('/books/', { method: 'GET' });
+            if (resp.ok) {
+                window.apiEnabled = true;
+                console.info('API disponível: sincronização ativada');
+            }
+        } catch (e) {
+            window.apiEnabled = false;
+        }
+    }
+
+    // tenta localizar um id do servidor correspondendo ao livro local (por isbn ou título)
+    async function findServerId(book) {
+        if (!window.apiEnabled) return null;
+        try {
+            const resp = await fetch('/books/');
+            if (!resp.ok) return null;
+            const list = await resp.json();
+            const found = list.find(s => (book.isbn && s.isbn && String(s.isbn) === String(book.isbn)) || (s.titulo && book.titulo && s.titulo.toLowerCase() === book.titulo.toLowerCase()));
+            return found ? found.id : null;
+        } catch (e) {
+            console.warn('Erro ao buscar id no servidor', e);
+            return null;
+        }
+    }
+
+    async function apiCreateBook(book) {
+        if (!window.apiEnabled) return;
+        try {
+            await fetch('/books/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ titulo: book.titulo, autor: book.autor, ano: book.ano, genero: book.genero, isbn: book.isbn, capa: book.capa, status: book.status })
+            });
+        } catch (e) { console.warn('Falha ao criar livro no servidor', e); }
+    }
+
+    async function apiUpdateBook(book) {
+        if (!window.apiEnabled) return;
+        try {
+            const sid = await findServerId(book);
+            if (!sid) return;
+            await fetch(`/books/${sid}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ titulo: book.titulo, autor: book.autor, ano: book.ano, genero: book.genero, isbn: book.isbn, capa: book.capa, status: book.status })
+            });
+        } catch (e) { console.warn('Falha ao atualizar livro no servidor', e); }
+    }
+
+    async function apiDeleteBook(book) {
+        if (!window.apiEnabled) return;
+        try {
+            const sid = await findServerId(book);
+            if (!sid) return;
+            await fetch(`/books/${sid}`, { method: 'DELETE' });
+        } catch (e) { console.warn('Falha ao deletar livro no servidor', e); }
+    }
+
+    async function apiBorrowBook(book) {
+        if (!window.apiEnabled) return;
+        try {
+            const sid = await findServerId(book);
+            if (!sid) return;
+            await fetch(`/books/${sid}/borrow`, { method: 'POST' });
+        } catch (e) { console.warn('Falha ao registrar empréstimo no servidor', e); }
+    }
+
+    async function apiReturnBook(book) {
+        if (!window.apiEnabled) return;
+        try {
+            const sid = await findServerId(book);
+            if (!sid) return;
+            await fetch(`/books/${sid}/return`, { method: 'POST' });
+        } catch (e) { console.warn('Falha ao registrar devolução no servidor', e); }
+    }
+
+    // detectar API sem bloquear a inicialização
+    detectApi();
+
+    // Atualizar chamadas existentes para também tentar sincronizar com a API
+    // Nota: as chamadas locais já existem; aqui adicionamos tentativas de sync
+    // criação (no submit): chamada apiCreateBook ou apiUpdateBook já é feita logo após salvar em localStorage
+    // excluir a partir do modal
+    const origModalExcluir = document.getElementById('excluir-livro');
+    if (origModalExcluir) {
+        origModalExcluir.addEventListener('click', async (e) => {
+            // handler já existente lida com exclusão local; aqui apenas sincronizamos
+            // delay pequeno para garantir que o localStorage já foi atualizado pelo handler original
+            await new Promise(r => setTimeout(r, 200));
+            const modal = document.getElementById('modal-detalhes');
+            const id = modal?.dataset.currentId;
+            const books = loadBooksFromStorage();
+            const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
+            if (book) await apiDeleteBook(book);
+        });
+    }
+
+    // interceptar criação/atualização para sincronizar
+    // substitui chamadas locais existentes: vamos envolver saveBooksToStorage para sincronizar
+    const _saveBooksToStorage = saveBooksToStorage;
+    saveBooksToStorage = function (books) {
+        _saveBooksToStorage(books);
+        // não tentamos sincronizar tudo aqui (pode ser pesado)
+    };
+
+    // Para pontos específicos onde gravamos (criação, edição, empréstimo, devolução)
+    // já existem chamadas a saveBooksToStorage em código anterior; vamos chamar API nas localizações apropriadas
+
+    // -> adaptamos o handler de submit para chamar a API (após salvar) adicionando listeners
+    // (observe que o submit handler já foi sobrescrito anteriormente; aqui anexamos um listener para sincronizar)
+    bookForm.addEventListener('submit', async (e) => {
+        // delay para aguardar que o handler principal processe e salve em localStorage
+        await new Promise(r => setTimeout(r, 100));
+        const editingId = document.getElementById('livro-id')?.value || '';
+        const books = loadBooksFromStorage();
+        if (editingId) {
+            const book = books.find(b => b.id === editingId || b.isbn === editingId || b.titulo === editingId);
+            if (book) await apiUpdateBook(book);
+        } else {
+            // assume que o último inserido é o novo
+            const book = books[0];
+            if (book) await apiCreateBook(book);
+        }
+    });
+
+    // sincronizar exclusão no card (adicionada anteriormente) - delegação global
+    document.addEventListener('click', async (e) => {
+        if (e.target && e.target.classList && e.target.classList.contains('button-delete')) {
+            // after local deletion occurs in handler, wait a bit and sync
+            await new Promise(r => setTimeout(r, 150));
+            // try to find book in dataset of button
+            const forId = e.target.dataset.forId;
+            const books = loadBooksFromStorage();
+            // if not found, maybe it was deleted -> try to inform server using the forId by building a dummy
+            const book = books.find(b => (b.id === forId) || (b.isbn === forId) || (b.titulo === forId));
+            if (book) {
+                await apiDeleteBook(book);
+            } else {
+                // book not found locally; attempt to inform server by using title/isbn from dataset
+                // best effort: try to fetch all and delete matching
+                if (window.apiEnabled && forId) {
+                    try {
+                        const resp = await fetch('/books/');
+                        if (resp.ok) {
+                            const list = await resp.json();
+                            const found = list.find(s => String(s.id) === String(forId) || (s.titulo && forId && s.titulo.toLowerCase() === forId.toLowerCase()));
+                            if (found) await fetch(`/books/${found.id}`, { method: 'DELETE' });
+                        }
+                    } catch (err) { }
+                }
+            }
+        }
+    });
+
+    // sincronizar empréstimo/devolução: adicionamos chamadas logo após os pontos onde book.status é alterado
+    // já nos handlers confirmarEmprestimoBtn/confirmarDevolucaoBtn, vamos chamar apiBorrowBook/apiReturnBook
+    if (confirmarEmprestimoBtn) {
+        confirmarEmprestimoBtn.addEventListener('click', async () => {
+            // after local processing, wait shortly and sync
+            await new Promise(r => setTimeout(r, 150));
+            const sel = document.getElementById('livro-emprestimo');
+            const id = sel?.value;
+            const books = loadBooksFromStorage();
+            const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
+            if (book) await apiBorrowBook(book);
+        });
+    }
+
+    if (confirmarDevolucaoBtn) {
+        confirmarDevolucaoBtn.addEventListener('click', async () => {
+            await new Promise(r => setTimeout(r, 150));
+            const sel = document.getElementById('livro-emprestimo');
+            const id = sel?.value;
+            const books = loadBooksFromStorage();
+            const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
+            if (book) await apiReturnBook(book);
+        });
+    }
+
+    // --- fim API sync ---
+
     // Inicial → abre Catálogo (não Gerenciar!)
     // Ao carregar, mantenha todas as seções fechadas e só abra ao clicar em abas
     document.getElementById('sec-catalogo').hidden = true;
@@ -740,24 +912,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-bar')?.addEventListener('input', () => applyFiltersAndRender(1));
 
     // Abrir modal Novo Livro pelo botão
-    const openNovoLivroBtn = document.getElementById('add-book-btn');
-    const modalNovoLivro = document.getElementById('modal-novo-livro');
-    if (openNovoLivroBtn && modalNovoLivro) {
-        openNovoLivroBtn.addEventListener('click', () => abrirModal(modalNovoLivro));
-        // atalho Alt+N
-        document.addEventListener('keydown', (e) => {
-            if (e.altKey && (e.key === 'n' || e.key === 'N')) {
-                abrirModal(modalNovoLivro);
-                e.preventDefault();
-            }
-        });
-    }
+    // (duplicata removida — referências já inicializadas anteriormente)
 
     // Abrir modal de empréstimo pelo botão na UI (se presente)
-    const openEmprestimoBtn = document.getElementById('open-emprestimo-btn');
-    if (openEmprestimoBtn) {
-        openEmprestimoBtn.addEventListener('click', () => abrirModal(modalEmprestimo));
-    }
+    // (duplicata removida — referência já inicializada anteriormente)
 
     // Ferramenta de relatórios (export CSV/JSON)
     document.getElementById('export-csv')?.addEventListener('click', () => {
