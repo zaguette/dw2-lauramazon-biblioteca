@@ -225,6 +225,59 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Popular histórico de empréstimos no modal de empréstimo
+    function populateHistoricoEmprestimos(bookId) {
+        const ul = document.getElementById('lista-emprestimos');
+        if (!ul) return;
+        ul.innerHTML = '';
+        const books = loadBooksFromStorage();
+        const book = books.find(b => (b.id === bookId) || (b.isbn === bookId) || (b.titulo === bookId));
+        if (!book || !Array.isArray(book.history) || !book.history.length) {
+            ul.innerHTML = '<li>Nenhum histórico encontrado para este livro.</li>';
+            return;
+        }
+        book.history.slice().reverse().forEach(h => {
+            const li = document.createElement('li');
+            li.textContent = `${h.nome || '-'} — ${new Date(h.data_emprestimo).toLocaleDateString()} -> ${h.data_devolucao ? new Date(h.data_devolucao).toLocaleDateString() : 'Ainda não devolvido'}`;
+            ul.appendChild(li);
+        });
+    }
+
+    // Abrir modal de empréstimo com população de select e histórico
+    document.getElementById('open-emprestimo-btn')?.addEventListener('click', () => {
+        const all = loadBooksFromStorage();
+        populateEmprestimoSelect(all);
+        // limpar campos do modal
+        document.getElementById('nome-pessoa').value = '';
+        document.getElementById('data-emprestimo').value = new Date().toISOString().slice(0,10);
+        document.getElementById('data-devolucao').value = '';
+        // limpar histórico
+        const sel = document.getElementById('livro-emprestimo');
+        populateHistoricoEmprestimos(sel?.value);
+        abrirModal(modalEmprestimo);
+    });
+
+    // Atualiza histórico quando muda a seleção
+    document.getElementById('livro-emprestimo')?.addEventListener('change', (e) => {
+        populateHistoricoEmprestimos(e.target.value);
+    });
+
+    // Ajustes: ao confirmar empréstimo/devolução garantir que select esteja correto e atualizar a UI
+    // Os handlers originais já fazem a lógica local; aqui apenas reforçamos a atualização de histórico/UI
+    document.getElementById('confirmar-emprestimo')?.addEventListener('click', () => {
+        const sel = document.getElementById('livro-emprestimo');
+        const id = sel?.value;
+        if (id) populateHistoricoEmprestimos(id);
+        // re-popular o select para refletir novo status
+        populateEmprestimoSelect(loadBooksFromStorage());
+    });
+    document.getElementById('confirmar-devolucao')?.addEventListener('click', () => {
+        const sel = document.getElementById('livro-emprestimo');
+        const id = sel?.value;
+        if (id) populateHistoricoEmprestimos(id);
+        populateEmprestimoSelect(loadBooksFromStorage());
+    });
+
     // Modal detalhes
     function abrirModalDetalhes(book) {
         document.getElementById('modal-capa').src = book.capa || 'https://via.placeholder.com/150x220?text=Livro';
@@ -241,13 +294,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('modal-detalhes');
         if (modal) modal.dataset.currentId = book.id || book.isbn || book.titulo || '';
 
-        // mostra o modal
-        document.getElementById('modal-detalhes').style.display = 'block';
+        // mostra o modal corretamente: remover atributo hidden e usar display flex
+        if (modal) {
+            modal.hidden = false;
+            modal.style.display = 'flex';
+            // dar foco para o botão editar dentro do modal
+            const editarBtn = modal.querySelector('#editar-livro');
+            if (editarBtn) editarBtn.focus();
+        }
     }
 
     // Fechar/abrir modal
     function fecharModal(modalElement) {
         if (!modalElement) return;
+        // ocultar de forma consistente
+        modalElement.hidden = true;
         modalElement.style.display = 'none';
         // retornar foco para o botão que abriu o modal
         const addBtn = document.getElementById('add-book-btn');
@@ -256,7 +317,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function abrirModal(modalElement) {
         if (!modalElement) return;
-        modalElement.style.display = 'block';
+        modalElement.hidden = false;
+        // se for modal overlay, usar flex para centralizar
+        modalElement.style.display = 'flex';
         // foco no primeiro input do modal
         const firstInput = modalElement.querySelector('input, select, textarea, button');
         if (firstInput) firstInput.focus();
@@ -823,7 +886,16 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const sid = await findServerId(book);
             if (!sid) return;
-            await fetch(`/books/${sid}/borrow`, { method: 'POST' });
+            // coletar dados do modal de empréstimo, se disponíveis
+            const nome = document.getElementById('nome-pessoa')?.value || (book.lastBorrower || '');
+            const data_emprestimo = document.getElementById('data-emprestimo')?.value || (new Date().toISOString());
+            const data_prev_devolucao = document.getElementById('data-devolucao')?.value || null;
+            const payload = { nome, data_emprestimo, data_prev_devolucao };
+            await fetch(`/books/${sid}/borrow`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
         } catch (e) { console.warn('Falha ao registrar empréstimo no servidor', e); }
     }
 
@@ -832,7 +904,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const sid = await findServerId(book);
             if (!sid) return;
-            await fetch(`/books/${sid}/return`, { method: 'POST' });
+            // coletar data de devolução do modal
+            const data_devolucao = document.getElementById('data-emprestimo')?.value ? document.getElementById('data-devolucao')?.value || new Date().toISOString() : (new Date().toISOString());
+            const payload = { data_devolucao };
+            await fetch(`/books/${sid}/return`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
         } catch (e) { console.warn('Falha ao registrar devolução no servidor', e); }
     }
 

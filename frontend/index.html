@@ -5,11 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Biblioteca Escolar</title>
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Fontes elegantes para cabeçalho e texto corpo -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
         <div class="header-content header-centered">
-            <h1>Biblioteca Escolar</h1>
+            <!-- ícone discreto de estante + título -->
+            <div class="brand-with-icon" style="display:flex;align-items:center;gap:10px;">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="2" y="3" width="20" height="18" rx="3" fill="#fff8f0" opacity="0.06"/>
+                    <path d="M4 7h16M4 11h16M4 15h16" stroke="#fff8f0" stroke-opacity="0.9" stroke-width="0.9" stroke-linecap="round"/>
+                    <path d="M7 19V7" stroke="#2f5d3b" stroke-width="1.1" stroke-linecap="round"/>
+                </svg>
+                <h1 style="font-family: 'Merriweather', serif; margin:0;">Biblioteca Escolar</h1>
+            </div>
             <input type="search" id="search-bar" placeholder="Buscar por título ou autor..." aria-label="Buscar livros">
         </div>
     </header>
@@ -23,31 +33,33 @@
 
     <div class="main-layout">
         <aside class="sidebar" aria-label="Filtros de livros">
-            <h2>Filtros</h2>
-            <div class="filter-group">
-                <label for="filter-genre">Gênero:</label>
-                <select id="filter-genre">
-                    <option value="">Todos</option>
-                    <option value="Romance">Romance</option>
-                    <option value="Aventura">Aventura</option>
-                    <option value="Fantasia">Fantasia</option>
-                    <option value="Suspense">Suspense</option>
-                </select>
+            <div class="filters-card">
+                <h2>Filtros</h2>
+                <div class="filter-group">
+                    <label for="filter-genre">🎭 Gênero:</label>
+                    <select id="filter-genre">
+                        <option value="">Todos</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Aventura">Aventura</option>
+                        <option value="Fantasia">Fantasia</option>
+                        <option value="Suspense">Suspense</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-year">📅 Ano:</label>
+                    <input type="number" id="filter-year" min="1900" max="2025" placeholder="Ano">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-status">📖 Status:</label>
+                    <select id="filter-status">
+                        <option value="">Todos</option>
+                        <option value="disponível">Disponível</option>
+                        <option value="emprestado">Emprestado</option>
+                    </select>
+                </div>
+                <button class="button" id="aplicar-filtros">Aplicar Filtros</button>
+                <button class="button" id="limpar-filtros" style="background: #666; margin-top: 10px;">Limpar Filtros</button>
             </div>
-            <div class="filter-group">
-                <label for="filter-year">Ano:</label>
-                <input type="number" id="filter-year" min="1900" max="2025" placeholder="Ano">
-            </div>
-            <div class="filter-group">
-                <label for="filter-status">Status:</label>
-                <select id="filter-status">
-                    <option value="">Todos</option>
-                    <option value="disponível">Disponível</option>
-                    <option value="emprestado">Emprestado</option>
-                </select>
-            </div>
-            <button class="button" id="aplicar-filtros">Aplicar Filtros</button>
-            <button class="button" id="limpar-filtros" style="background: #666; margin-top: 10px;">Limpar Filtros</button>
         </aside>
 
         <main class="content-area">
@@ -154,22 +166,24 @@
         <div class="modal-content">
             <button class="close-modal">&times;</button>
             <img id="modal-capa" src="" alt="Capa do livro">
-            <h2 id="modal-titulo"></h2>
-            <p><strong>Autor:</strong> <span id="modal-autor"></span></p>
-            <p><strong>Páginas:</strong> <span id="modal-paginas"></span></p>
-            <p><strong>Ano:</strong> <span id="modal-ano"></span></p>
-            <p><strong>ISBN:</strong> <span id="modal-isbn"></span></p>
-            <p><strong>Gênero:</strong> <span id="modal-genero"></span></p>
-            <p><strong>Status:</strong> <span id="modal-status"></span></p>
-            <div class="form-group">
-                <label><strong>Descrição:</strong></label>
-                <p id="modal-descricao" style="white-space: pre-wrap; margin-top:6px; color:#333;"></p>
-            </div>
-            <div class="action-buttons">
-                <button class="button btn-editar" id="editar-livro">Editar</button>
-                <button class="button btn-excluir" id="excluir-livro">Excluir</button>
-                <button class="button btn-emprestar" id="emprestar-livro" style="display: none;">Emprestar</button>
-                <button class="button btn-devolver" id="devolver-livro" style="display: none;">Devolver</button>
+            <div class="details">
+                <h2 id="modal-titulo"></h2>
+                <p><strong>Autor:</strong> <span id="modal-autor"></span></p>
+                <p><strong>Páginas:</strong> <span id="modal-paginas"></span></p>
+                <p><strong>Ano:</strong> <span id="modal-ano"></span></p>
+                <p><strong>ISBN:</strong> <span id="modal-isbn"></span></p>
+                <p><strong>Gênero:</strong> <span id="modal-genero"></span></p>
+                <p><strong>Status:</strong> <span id="modal-status"></span></p>
+                <div class="form-group">
+                    <label><strong>Descrição:</strong></label>
+                    <p id="modal-descricao" style="white-space: pre-wrap; margin-top:6px; color:#333;"></p>
+                </div>
+                <div class="action-buttons">
+                    <button class="button btn-editar" id="editar-livro">Editar</button>
+                    <button class="button btn-excluir" id="excluir-livro">Excluir</button>
+                    <button class="button btn-emprestar" id="emprestar-livro" style="display: none;">Emprestar</button>
+                    <button class="button btn-devolver" id="devolver-livro" style="display: none;">Devolver</button>
+                </div>
             </div>
         </div>
     </div>
@@ -207,6 +221,14 @@
             </div>
         </div>
     </div>
+
+    <!-- Footer acolhedor -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <p>"Um livro é um sonho que você segura nas mãos." — Aproveite a leitura no nosso cantinho.</p>
+            <div class="footer-icons">☕ 📚 🌿</div>
+        </div>
+    </footer>
 
     <script src="js/main.js"></script>
 </body>
