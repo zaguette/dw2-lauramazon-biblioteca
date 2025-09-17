@@ -692,6 +692,69 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // UI effects: brilho no botão e folhas caindo
+    function shineButton(btn) {
+        if (!btn) return;
+        btn.classList.add('btn-shine');
+        btn.classList.add('animate');
+        setTimeout(() => btn.classList.remove('animate'), 800);
+    }
+
+    function startLeafFall(durationMs = 3000) {
+        // criar overlay
+        let overlay = document.getElementById('leaf-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'leaf-overlay';
+            document.body.appendChild(overlay);
+        }
+        // criar várias folhas com variações
+        const count = 18;
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        for (let i = 0; i < count; i++) {
+            const leaf = document.createElement('div');
+            leaf.className = 'leaf ' + (i % 2 === 0 ? 'f1' : 'f2');
+            const left = Math.random() * vw;
+            const delay = Math.random() * 0.8 * (durationMs / 1000); // segundos
+            const dur = 2 + Math.random() * 2.5; // 2..4.5s
+            leaf.style.left = `${left}px`;
+            leaf.style.top = `-10vh`;
+            leaf.style.opacity = `${0.9 + Math.random() * 0.1}`;
+            leaf.style.animation = `leafFall ${dur}s linear ${delay}s forwards`;
+            overlay.appendChild(leaf);
+        }
+        // limpar após duração + margem
+        setTimeout(() => {
+            if (overlay) overlay.innerHTML = '';
+        }, durationMs + 1200);
+    }
+
+    // integrando efeitos nos fluxos existentes
+    // Ao criar novo livro (no submit handler), após salvar
+    bookForm.addEventListener('submit', (e) => {
+        // efeito no botão salvar
+        const btn = document.getElementById('salvar-livro');
+        if (btn) shineButton(btn);
+        // se criação, disparar folhas após breve atraso (depois do save)
+        setTimeout(() => startLeafFall(3000), 400);
+    });
+
+    // Ao registrar empréstimo e devolução (already handlers call updateReports etc.)
+    const confirmarEmpBtn = document.getElementById('confirmar-emprestimo');
+    if (confirmarEmpBtn) {
+        confirmarEmpBtn.addEventListener('click', () => {
+            shineButton(confirmarEmpBtn);
+            setTimeout(() => startLeafFall(3000), 400);
+        });
+    }
+    const confirmarDevBtn = document.getElementById('confirmar-devolucao');
+    if (confirmarDevBtn) {
+        confirmarDevBtn.addEventListener('click', () => {
+            shineButton(confirmarDevBtn);
+            setTimeout(() => startLeafFall(3000), 400);
+        });
+    }
+
     // --- API sync (opcional) ---
     window.apiEnabled = false;
 
