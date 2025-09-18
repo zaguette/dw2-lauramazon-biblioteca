@@ -138,47 +138,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="book-status ${statusClass}">${book.status || 'desconhecido'}</span>
             `;
 
-            // Botão Excluir (inicialmente oculto)
-            const delBtn = document.createElement('button');
-            delBtn.className = 'button button-delete';
-            delBtn.textContent = 'Excluir';
-            delBtn.style.marginTop = '8px';
-            delBtn.style.display = 'none';
-            delBtn.dataset.forId = card.dataset.bookId;
-            delBtn.addEventListener('click', (e) => {
+            // clicar no card abre uma abinha (popover) com detalhes rápidos e ações
+            card.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (!confirm('Tem certeza que deseja excluir este livro?')) return;
-                const books = loadBooksFromStorage();
-                const idx = books.findIndex(b => (
-                    (b.id && delBtn.dataset.forId && b.id === delBtn.dataset.forId) ||
-                    (b.isbn && delBtn.dataset.forId && b.isbn === delBtn.dataset.forId) ||
-                    (b.titulo && delBtn.dataset.forId && b.titulo === delBtn.dataset.forId)
-                ));
-                if (idx === -1) {
-                    alert('Livro não encontrado no armazenamento.');
-                    return;
-                }
-                books.splice(idx, 1);
-                saveBooksToStorage(books);
-                // Re-renderiza mantendo a mesma página solicitada
-                applyFiltersAndRender(page);
+                abrirPopoverDetalhes(book, card);
             });
 
-            // clicar no card abre modal e exibe opções (mostrar o botão Excluir)
-            card.addEventListener('click', () => {
-                // esconder botão anterior
-                if (activeDelBtn && activeDelBtn !== delBtn) {
-                    activeDelBtn.style.display = 'none';
-                }
-                // mostrar o botão deste card
-                delBtn.style.display = 'inline-block';
-                activeDelBtn = delBtn;
-
-                // abrir modal com detalhes
-                abrirModalDetalhes(book);
-            });
-
-            card.appendChild(delBtn);
             bookGrid.appendChild(card);
         });
 
@@ -186,31 +151,143 @@ document.addEventListener('DOMContentLoaded', () => {
         window.livros = items;
     }
 
-    function renderPagination(totalPages, currentPage) {
-        const container = document.getElementById('catalog-pagination');
-        if (!container) return;
-        container.innerHTML = '';
-        if (totalPages <= 1) return;
+    // --- Popover: abre uma abinha posicionada acima do card clicado ---
+    let currentPopover = null;
 
-        const prev = document.createElement('button');
-        prev.className = 'button';
-        prev.textContent = 'Anterior';
-        prev.disabled = currentPage <= 1;
-        prev.addEventListener('click', () => applyFiltersAndRender(currentPage - 1));
-        container.appendChild(prev);
+    function abrirPopoverDetalhes(book, anchorCard) {
+        closePopover();
+        const pop = document.createElement('div');
+        pop.className = 'popover-details';
+        pop.style.position = 'absolute';
+        pop.style.zIndex = 2500;
+        pop.style.opacity = '0';
+        pop.style.transform = 'translateY(6px)';
+        pop.style.transition = 'opacity 160ms ease, transform 160ms ease';
 
-        const span = document.createElement('span');
-        span.style.margin = '0 8px';
-        span.textContent = `${currentPage} / ${totalPages}`;
-        container.appendChild(span);
+        // alinhar largura com o card (mantendo limites para legibilidade)
+        const rect = anchorCard.getBoundingClientRect();
+        const desiredWidth = Math.min(Math.max(Math.round(rect.width), 240), 420);
+        pop.style.width = desiredWidth + 'px';
 
-        const next = document.createElement('button');
-        next.className = 'button';
-        next.textContent = 'Próxima';
-        next.disabled = currentPage >= totalPages;
-        next.addEventListener('click', () => applyFiltersAndRender(currentPage + 1));
-        container.appendChild(next);
+        pop.innerHTML = `
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+                <img src="${book.capa || 'https://via.placeholder.com/100x150?text=Livro'}" alt="Capa" style="width:88px;height:132px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+                <div style="flex:1;min-width:0;">
+                    <h4 class="popover-title" style="margin:0 0 6px;font-size:16px;">${book.titulo}</h4>
+                    <div style="font-size:13px;color:#333;margin-bottom:6px;">${book.autor || 'Autor não informado'}</div>
+                    <div style="font-size:12px;color:#666;margin-bottom:6px;">Ano: ${book.ano || '-'}</div>
+                    <div style="font-size:12px;color:#666;margin-bottom:8px;">Status: ${book.status || '-'}</div>
+                    <div class="popover-descricao" style="margin-bottom:8px;">${(book.descricao || 'Sem descrição disponível')}</div>
+                    <div style="display:flex;gap:8px;margin-top:6px;">
+                        <button class="button pop-editar">Editar</button>
+                        <button class="button pop-emprestar">Emprestar</button>
+                        <button class="button pop-excluir" style="background:#c33;">Excluir</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(pop);
+
+        // medir e posicionar acima do card; tentar abrir sempre acima quando houver espaço
+        let popRect = pop.getBoundingClientRect();
+        let left = rect.left + window.scrollX + (rect.width / 2) - (popRect.width / 2);
+        left = Math.max(12 + window.scrollX, Math.min(left, window.scrollX + document.documentElement.clientWidth - popRect.width - 12));
+        let top = rect.top + window.scrollY - popRect.height - 12;
+
+        // se não houver espaço suficiente acima, tentar ajustar scroll para abrir acima
+        if (top < window.scrollY + 12) {
+            const need = (popRect.height + 36) - rect.top;
+            if (need > 0) window.scrollBy({ top: -need, behavior: 'smooth' });
+        }
+
+        // Recalcular após qualquer rolagem/layout usando RAF
+        requestAnimationFrame(() => {
+            popRect = pop.getBoundingClientRect();
+            let finalTop = rect.top + window.scrollY - popRect.height - 12;
+            if (finalTop < window.scrollY + 12) finalTop = rect.bottom + window.scrollY + 12; // fallback abaixo
+            let finalLeft = rect.left + window.scrollX + (rect.width / 2) - (popRect.width / 2);
+            finalLeft = Math.max(12 + window.scrollX, Math.min(finalLeft, window.scrollX + document.documentElement.clientWidth - popRect.width - 12));
+
+            pop.style.left = finalLeft + 'px';
+            pop.style.top = finalTop + 'px';
+
+            // calcular posição da seta relativamente ao popover
+            const arrowLeft = Math.min(Math.max((rect.left + window.scrollX + rect.width / 2) - finalLeft - 7, 12), popRect.width - 24);
+            pop.style.setProperty('--arrow-left', arrowLeft + 'px');
+
+            // animação de entrada
+            requestAnimationFrame(() => { pop.style.opacity = '1'; pop.style.transform = 'translateY(0)'; });
+        });
+
+        // excluir via popover
+        pop.querySelector('.pop-excluir')?.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            if (!confirm('Tem certeza que deseja excluir este livro?')) return;
+            const books = loadBooksFromStorage();
+            const id = book.id || book.isbn || book.titulo;
+            const idx = books.findIndex(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
+            if (idx === -1) { alert('Livro não encontrado'); closePopover(); return; }
+            books.splice(idx, 1);
+            saveBooksToStorage(books);
+            closePopover();
+            applyFiltersAndRender(1);
+        });
+
+        // editar via popover
+        pop.querySelector('.pop-editar')?.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const books = loadBooksFromStorage();
+            const id = book.id || book.isbn || book.titulo;
+            const bk = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
+            if (!bk) { alert('Livro não encontrado'); closePopover(); return; }
+            document.getElementById('livro-id').value = bk.id || '';
+            document.getElementById('titulo').value = bk.titulo || '';
+            document.getElementById('autor').value = bk.autor || '';
+            document.getElementById('ano').value = bk.ano || '';
+            document.getElementById('paginas').value = bk.paginas || '';
+            document.getElementById('genero').value = bk.genero || '';
+            document.getElementById('isbn').value = bk.isbn || '';
+            document.getElementById('capa').value = bk.capa || '';
+            document.getElementById('descricao').value = bk.descricao || '';
+            document.getElementById('status').value = bk.status || 'disponível';
+            closePopover();
+            abrirModal(document.getElementById('modal-novo-livro'), anchorCard);
+        });
+
+        // emprestar via popover
+        pop.querySelector('.pop-emprestar')?.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            const books = loadBooksFromStorage();
+            const id = book.id || book.isbn || book.titulo;
+            const bk = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
+            if (!bk) { alert('Livro não encontrado'); closePopover(); return; }
+
+            populateEmprestimoSelect(loadBooksFromStorage());
+            const sel = document.getElementById('livro-emprestimo');
+            if (sel) sel.value = bk.id || bk.isbn || bk.titulo || '';
+            populateHistoricoEmprestimos(sel?.value);
+            document.getElementById('nome-pessoa').value = '';
+            document.getElementById('data-emprestimo').value = new Date().toISOString().slice(0,10);
+            document.getElementById('data-devolucao').value = '';
+
+            closePopover();
+            abrirModal(modalEmprestimo, anchorCard);
+        });
+
+        currentPopover = pop;
     }
+
+    function closePopover() {
+        if (currentPopover && currentPopover.parentNode) currentPopover.parentNode.removeChild(currentPopover);
+        currentPopover = null;
+    }
+
+    // fecha popover ao clicar fora
+    document.addEventListener('click', (ev) => {
+        if (ev.target.closest && (ev.target.closest('.popover-details') || ev.target.closest('.book-card'))) return;
+        closePopover();
+    });
 
     // Atualiza select de empréstimo
     function populateEmprestimoSelect(books) {
@@ -315,8 +392,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if (addBtn) addBtn.focus();
     }
 
-    function abrirModal(modalElement) {
+    function abrirModal(modalElement, anchor) {
         if (!modalElement) return;
+        // se foi fornecido um anchor, exibimos o modal como um popover posicionado acima do elemento
+        if (anchor && anchor.getBoundingClientRect) {
+            // limpar qualquer estado anterior
+            modalElement.hidden = false;
+            modalElement.style.position = 'absolute';
+            modalElement.style.display = 'block';
+            modalElement.style.zIndex = 2600;
+            modalElement.style.maxWidth = '420px';
+            modalElement.style.width = 'auto';
+            modalElement.style.margin = '0';
+            // centralizar a caixa em relação ao anchor e posicionar acima
+            const rect = anchor.getBoundingClientRect();
+            // temporariamente garantir que modal está no documento para medir
+            // medir altura aproximada após forçar visibilidade
+            // calcular top desejado para ficar acima do anchor
+            // ajustar scroll se necessário para abrir acima
+            // primeiro deixar o modal fora da tela para medir
+            modalElement.style.left = '0px';
+            modalElement.style.top = '0px';
+
+            // pequena espera de layout
+            requestAnimationFrame(() => {
+                const mRect = modalElement.getBoundingClientRect();
+                const popH = mRect.height || 220;
+                let top = rect.top + window.scrollY - popH - 12;
+                // se não houver espaço suficiente, rolar suavemente para abrir acima
+                if (top < window.scrollY + 8) {
+                    const need = (popH + 32) - rect.top;
+                    window.scrollBy({ top: -need, behavior: 'smooth' });
+                    // aguardar a rolagem terminar minimamente antes de posicionar
+                }
+                // medir de novo após possível scroll
+                requestAnimationFrame(() => {
+                    const mRect2 = modalElement.getBoundingClientRect();
+                    const popH2 = mRect2.height || popH;
+                    let finalTop = rect.top + window.scrollY - popH2 - 12;
+                    if (finalTop < window.scrollY + 8) finalTop = rect.bottom + window.scrollY + 12; // fallback abaixo
+                    let left = rect.left + window.scrollX + (rect.width / 2) - (mRect2.width / 2);
+                    left = Math.max(8 + window.scrollX, Math.min(left, window.scrollX + document.documentElement.clientWidth - mRect2.width - 8));
+                    modalElement.style.left = left + 'px';
+                    modalElement.style.top = finalTop + 'px';
+                });
+            });
+
+            // foco no primeiro input do modal
+            const firstInput = modalElement.querySelector('input, select, textarea, button');
+            if (firstInput) firstInput.focus();
+            // marcar que modal foi aberto como popover
+            modalElement.dataset._popover = '1';
+            return;
+        }
+
+        // comportamento padrão (centralizado)
         modalElement.hidden = false;
         // se for modal overlay, usar flex para centralizar
         modalElement.style.display = 'flex';
@@ -556,469 +686,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('sec-relatorios').hidden = true;
         document.getElementById(secaoId).hidden = false;
     }
-
-    // Inicial → abre Catálogo (não Gerenciar!)
-    // Ao carregar, mantenha todas as seções fechadas e só abra ao clicar em abas
-    document.getElementById('sec-catalogo').hidden = true;
-    document.getElementById('sec-gerenciar').hidden = true;
-    document.getElementById('sec-relatorios').hidden = true;
-
-    // Abrir catálogo por padrão ao final da inicialização
-    mostrarSecao('sec-catalogo');
-
-    document.getElementById('nav-catalogo').onclick = () => {
-        mostrarSecao('sec-catalogo');
-        applyFiltersAndRender(1);
-    };
-    document.getElementById('nav-gerenciar').onclick = () => {
-        mostrarSecao('sec-gerenciar');
-    };
-    document.getElementById('nav-relatorios').onclick = () => {
-        mostrarSecao('sec-relatorios');
-        // atualizar estatísticas básicas
-        updateReports();
-    };
-
-    // Adiciona handlers para filtros e busca
-    document.getElementById('aplicar-filtros')?.addEventListener('click', () => applyFiltersAndRender(1));
-    document.getElementById('limpar-filtros')?.addEventListener('click', () => {
-        document.getElementById('filter-genre').value = '';
-        document.getElementById('filter-year').value = '';
-        document.getElementById('filter-status').value = '';
-        document.getElementById('search-bar').value = '';
-        applyFiltersAndRender(1);
-    });
-    document.getElementById('search-bar')?.addEventListener('input', () => applyFiltersAndRender(1));
-
-    // Abrir modal Novo Livro pelo botão
-    // (duplicata removida — referências já inicializadas anteriormente)
-
-    // Abrir modal de empréstimo pelo botão na UI (se presente)
-    // (duplicata removida — referência já inicializada anteriormente)
-
-    // Ferramenta de relatórios (export CSV/JSON)
-    document.getElementById('export-csv')?.addEventListener('click', () => {
-        const items = window.livros || loadBooksFromStorage();
-        const csv = toCSV(items);
-        downloadBlob(csv, 'books.csv', 'text/csv');
-    });
-    document.getElementById('export-json')?.addEventListener('click', () => {
-        const items = window.livros || loadBooksFromStorage();
-        const json = JSON.stringify(items, null, 2);
-        downloadBlob(json, 'books.json', 'application/json');
-    });
-
-    function toCSV(items) {
-        if (!items || !items.length) return '';
-        const keys = ['id','titulo','autor','ano','paginas','genero','isbn','status','data_emprestimo'];
-        const rows = [keys.join(',')];
-        items.forEach(it => {
-            rows.push(keys.map(k => `"${String(it[k] ?? '')}"`).join(','));
-        });
-        return rows.join('\n');
-    }
-
-    function downloadBlob(content, filename, type) {
-        const blob = new Blob([content], { type });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-    }
-
-    // Estatísticas simples para Relatórios
-    function updateReports() {
-        const all = loadBooksFromStorage();
-        document.getElementById('total-livros').textContent = all.length;
-        document.getElementById('livros-disponiveis').textContent = all.filter(b => String(b.status).toLowerCase().includes('disp')).length;
-        document.getElementById('livros-emprestados').textContent = all.filter(b => String(b.status).toLowerCase().includes('emprest')).length;
-        const byGenre = all.reduce((acc, b) => {
-            const g = b.genero || 'Outro';
-            acc[g] = (acc[g] || 0) + 1;
-            return acc;
-        }, {});
-        const ul = document.getElementById('livros-por-genero');
-        ul.innerHTML = '';
-        Object.keys(byGenre).forEach(k => {
-            const li = document.createElement('li');
-            li.textContent = `${k}: ${byGenre[k]}`;
-            ul.appendChild(li);
-        });
-
-        // Relatório detalhado de empréstimos: listar todos os livros que já foram emprestados (history.length > 0)
-        let container = document.getElementById('rel-emprestados');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'rel-emprestados';
-            container.style.marginTop = '16px';
-            const reportSection = document.getElementById('report-output');
-            reportSection.appendChild(container);
-        }
-        container.innerHTML = '<h3>Livros com histórico de Empréstimos</h3>';
-
-        const emprestados = all.filter(b => Array.isArray(b.history) && b.history.length > 0);
-        if (!emprestados.length) {
-            container.innerHTML += '<p>Nenhum empréstimo registrado ainda.</p>';
-            return;
-        }
-
-        const formatDate = (iso) => {
-            if (!iso) return '-';
-            try { const d = new Date(iso); return d.toLocaleDateString(); } catch (e) { return iso; }
-        };
-
-        emprestados.forEach(book => {
-            const card = document.createElement('div');
-            card.className = 'report-book-card';
-            card.style.display = 'flex';
-            card.style.marginBottom = '12px';
-            card.style.border = '1px solid #ddd';
-            card.style.padding = '10px';
-            card.style.borderRadius = '6px';
-
-            const capa = document.createElement('img');
-            capa.src = book.capa || 'https://via.placeholder.com/80x120?text=Livro';
-            capa.alt = book.titulo;
-            capa.style.width = '80px';
-            capa.style.height = '120px';
-            capa.style.objectFit = 'cover';
-            capa.style.marginRight = '12px';
-            card.appendChild(capa);
-
-            const right = document.createElement('div');
-            right.style.flex = '1';
-
-            const title = document.createElement('h4');
-            title.textContent = `${book.titulo} — ${book.autor || ''}`;
-            right.appendChild(title);
-
-            // tabela de histórico
-            const table = document.createElement('table');
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Nome do usuário</th>
-                        <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Data de empréstimo</th>
-                        <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Data prevista de devolução</th>
-                        <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Data de devolução</th>
-                        <th style="text-align:left; padding:6px; border-bottom:1px solid #ccc;">Status</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody');
-
-            book.history.slice().reverse().forEach(entry => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding:6px; border-bottom:1px solid #eee;">${entry.nome || '-'}</td>
-                    <td style="padding:6px; border-bottom:1px solid #eee;">${formatDate(entry.data_emprestimo)}</td>
-                    <td style="padding:6px; border-bottom:1px solid #eee;">${formatDate(entry.data_prev_devolucao)}</td>
-                    <td style="padding:6px; border-bottom:1px solid #eee;">${formatDate(entry.data_devolucao)}</td>
-                    <td style="padding:6px; border-bottom:1px solid #eee; font-weight:600;"></td>
-                `;
-                const statusCell = tr.querySelector('td:last-child');
-                // determina se atrasado
-                let atrasado = false;
-                const now = new Date();
-                if (!entry.data_devolucao) {
-                    // não devolvido ainda
-                    if (entry.data_prev_devolucao) {
-                        const due = new Date(entry.data_prev_devolucao);
-                        if (now > due) atrasado = true;
-                    }
-                    statusCell.textContent = atrasado ? 'Atrasado' : 'No prazo';
-                    statusCell.style.color = atrasado ? '#c00' : '#090';
-                } else {
-                    // já devolvido: comparar data_devolucao (real) com data_prev_devolucao
-                    if (entry.data_prev_devolucao) {
-                        const due = new Date(entry.data_prev_devolucao);
-                        const real = new Date(entry.data_devolucao);
-                        atrasado = real > due;
-                    }
-                    statusCell.textContent = atrasado ? 'Atrasado' : 'Devolvido no prazo';
-                    statusCell.style.color = atrasado ? '#c00' : '#090';
-                }
-
-                tbody.appendChild(tr);
-            });
-
-            right.appendChild(table);
-            card.appendChild(right);
-            container.appendChild(card);
-        });
-    }
-
-    // UI effects: brilho no botão e folhas caindo
-    function shineButton(btn) {
-        if (!btn) return;
-        btn.classList.add('btn-shine');
-        btn.classList.add('animate');
-        setTimeout(() => btn.classList.remove('animate'), 800);
-    }
-
-    function startLeafFall(durationMs = 3000) {
-        // criar overlay
-        let overlay = document.getElementById('leaf-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'leaf-overlay';
-            document.body.appendChild(overlay);
-        }
-        // criar várias folhas com variações
-        const count = 18;
-        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-        for (let i = 0; i < count; i++) {
-            const leaf = document.createElement('div');
-            leaf.className = 'leaf ' + (i % 2 === 0 ? 'f1' : 'f2');
-            const left = Math.random() * vw;
-            const delay = Math.random() * 0.8 * (durationMs / 1000); // segundos
-            const dur = 2 + Math.random() * 2.5; // 2..4.5s
-            leaf.style.left = `${left}px`;
-            leaf.style.top = `-10vh`;
-            leaf.style.opacity = `${0.9 + Math.random() * 0.1}`;
-            leaf.style.animation = `leafFall ${dur}s linear ${delay}s forwards`;
-            overlay.appendChild(leaf);
-        }
-        // limpar após duração + margem
-        setTimeout(() => {
-            if (overlay) overlay.innerHTML = '';
-        }, durationMs + 1200);
-    }
-
-    // integrando efeitos nos fluxos existentes
-    // Ao criar novo livro (no submit handler), após salvar
-    bookForm.addEventListener('submit', (e) => {
-        // efeito no botão salvar
-        const btn = document.getElementById('salvar-livro');
-        if (btn) shineButton(btn);
-        // se criação, disparar folhas após breve atraso (depois do save)
-        setTimeout(() => startLeafFall(3000), 400);
-    });
-
-    // Ao registrar empréstimo e devolução (already handlers call updateReports etc.)
-    const confirmarEmpBtn = document.getElementById('confirmar-emprestimo');
-    if (confirmarEmpBtn) {
-        confirmarEmpBtn.addEventListener('click', () => {
-            shineButton(confirmarEmpBtn);
-            setTimeout(() => startLeafFall(3000), 400);
-        });
-    }
-    const confirmarDevBtn = document.getElementById('confirmar-devolucao');
-    if (confirmarDevBtn) {
-        confirmarDevBtn.addEventListener('click', () => {
-            shineButton(confirmarDevBtn);
-            setTimeout(() => startLeafFall(3000), 400);
-        });
-    }
-
-    // --- API sync (opcional) ---
-    window.apiEnabled = false;
-
-    async function detectApi() {
-        try {
-            const resp = await fetch('/books/', { method: 'GET' });
-            if (resp.ok) {
-                window.apiEnabled = true;
-                console.info('API disponível: sincronização ativada');
-            }
-        } catch (e) {
-            window.apiEnabled = false;
-        }
-    }
-
-    // tenta localizar um id do servidor correspondendo ao livro local (por isbn ou título)
-    async function findServerId(book) {
-        if (!window.apiEnabled) return null;
-        try {
-            const resp = await fetch('/books/');
-            if (!resp.ok) return null;
-            const list = await resp.json();
-            const found = list.find(s => (book.isbn && s.isbn && String(s.isbn) === String(book.isbn)) || (s.titulo && book.titulo && s.titulo.toLowerCase() === book.titulo.toLowerCase()));
-            return found ? found.id : null;
-        } catch (e) {
-            console.warn('Erro ao buscar id no servidor', e);
-            return null;
-        }
-    }
-
-    async function apiCreateBook(book) {
-        if (!window.apiEnabled) return;
-        try {
-            await fetch('/books/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ titulo: book.titulo, autor: book.autor, ano: book.ano, genero: book.genero, isbn: book.isbn, capa: book.capa, status: book.status })
-            });
-        } catch (e) { console.warn('Falha ao criar livro no servidor', e); }
-    }
-
-    async function apiUpdateBook(book) {
-        if (!window.apiEnabled) return;
-        try {
-            const sid = await findServerId(book);
-            if (!sid) return;
-            await fetch(`/books/${sid}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ titulo: book.titulo, autor: book.autor, ano: book.ano, genero: book.genero, isbn: book.isbn, capa: book.capa, status: book.status })
-            });
-        } catch (e) { console.warn('Falha ao atualizar livro no servidor', e); }
-    }
-
-    async function apiDeleteBook(book) {
-        if (!window.apiEnabled) return;
-        try {
-            const sid = await findServerId(book);
-            if (!sid) return;
-            await fetch(`/books/${sid}`, { method: 'DELETE' });
-        } catch (e) { console.warn('Falha ao deletar livro no servidor', e); }
-    }
-
-    async function apiBorrowBook(book) {
-        if (!window.apiEnabled) return;
-        try {
-            const sid = await findServerId(book);
-            if (!sid) return;
-            // coletar dados do modal de empréstimo, se disponíveis
-            const nome = document.getElementById('nome-pessoa')?.value || (book.lastBorrower || '');
-            const data_emprestimo = document.getElementById('data-emprestimo')?.value || (new Date().toISOString());
-            const data_prev_devolucao = document.getElementById('data-devolucao')?.value || null;
-            const payload = { nome, data_emprestimo, data_prev_devolucao };
-            await fetch(`/books/${sid}/borrow`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } catch (e) { console.warn('Falha ao registrar empréstimo no servidor', e); }
-    }
-
-    async function apiReturnBook(book) {
-        if (!window.apiEnabled) return;
-        try {
-            const sid = await findServerId(book);
-            if (!sid) return;
-            // coletar data de devolução do modal
-            const data_devolucao = document.getElementById('data-emprestimo')?.value ? document.getElementById('data-devolucao')?.value || new Date().toISOString() : (new Date().toISOString());
-            const payload = { data_devolucao };
-            await fetch(`/books/${sid}/return`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } catch (e) { console.warn('Falha ao registrar devolução no servidor', e); }
-    }
-
-    // detectar API sem bloquear a inicialização
-    detectApi();
-
-    // Atualizar chamadas existentes para também tentar sincronizar com a API
-    // Nota: as chamadas locais já existem; aqui adicionamos tentativas de sync
-    // criação (no submit): chamada apiCreateBook ou apiUpdateBook já é feita logo após salvar em localStorage
-    // excluir a partir do modal
-    const origModalExcluir = document.getElementById('excluir-livro');
-    if (origModalExcluir) {
-        origModalExcluir.addEventListener('click', async (e) => {
-            // handler já existente lida com exclusão local; aqui apenas sincronizamos
-            // delay pequeno para garantir que o localStorage já foi atualizado pelo handler original
-            await new Promise(r => setTimeout(r, 200));
-            const modal = document.getElementById('modal-detalhes');
-            const id = modal?.dataset.currentId;
-            const books = loadBooksFromStorage();
-            const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
-            if (book) await apiDeleteBook(book);
-        });
-    }
-
-    // interceptar criação/atualização para sincronizar
-    // substitui chamadas locais existentes: vamos envolver saveBooksToStorage para sincronizar
-    const _saveBooksToStorage = saveBooksToStorage;
-    saveBooksToStorage = function (books) {
-        _saveBooksToStorage(books);
-        // não tentamos sincronizar tudo aqui (pode ser pesado)
-    };
-
-    // Para pontos específicos onde gravamos (criação, edição, empréstimo, devolução)
-    // já existem chamadas a saveBooksToStorage em código anterior; vamos chamar API nas localizações apropriadas
-
-    // -> adaptamos o handler de submit para chamar a API (após salvar) adicionando listeners
-    // (observe que o submit handler já foi sobrescrito anteriormente; aqui anexamos um listener para sincronizar)
-    bookForm.addEventListener('submit', async (e) => {
-        // delay para aguardar que o handler principal processe e salve em localStorage
-        await new Promise(r => setTimeout(r, 100));
-        const editingId = document.getElementById('livro-id')?.value || '';
-        const books = loadBooksFromStorage();
-        if (editingId) {
-            const book = books.find(b => b.id === editingId || b.isbn === editingId || b.titulo === editingId);
-            if (book) await apiUpdateBook(book);
-        } else {
-            // assume que o último inserido é o novo
-            const book = books[0];
-            if (book) await apiCreateBook(book);
-        }
-    });
-
-    // sincronizar exclusão no card (adicionada anteriormente) - delegação global
-    document.addEventListener('click', async (e) => {
-        if (e.target && e.target.classList && e.target.classList.contains('button-delete')) {
-            // after local deletion occurs in handler, wait a bit and sync
-            await new Promise(r => setTimeout(r, 150));
-            // try to find book in dataset of button
-            const forId = e.target.dataset.forId;
-            const books = loadBooksFromStorage();
-            // if not found, maybe it was deleted -> try to inform server using the forId by building a dummy
-            const book = books.find(b => (b.id === forId) || (b.isbn === forId) || (b.titulo === forId));
-            if (book) {
-                await apiDeleteBook(book);
-            } else {
-                // book not found locally; attempt to inform server by using title/isbn from dataset
-                // best effort: try to fetch all and delete matching
-                if (window.apiEnabled && forId) {
-                    try {
-                        const resp = await fetch('/books/');
-                        if (resp.ok) {
-                            const list = await resp.json();
-                            const found = list.find(s => String(s.id) === String(forId) || (s.titulo && forId && s.titulo.toLowerCase() === forId.toLowerCase()));
-                            if (found) await fetch(`/books/${found.id}`, { method: 'DELETE' });
-                        }
-                    } catch (err) { }
-                }
-            }
-        }
-    });
-
-    // sincronizar empréstimo/devolução: adicionamos chamadas logo após os pontos onde book.status é alterado
-    // já nos handlers confirmarEmprestimoBtn/confirmarDevolucaoBtn, vamos chamar apiBorrowBook/apiReturnBook
-    if (confirmarEmprestimoBtn) {
-        confirmarEmprestimoBtn.addEventListener('click', async () => {
-            // after local processing, wait shortly and sync
-            await new Promise(r => setTimeout(r, 150));
-            const sel = document.getElementById('livro-emprestimo');
-            const id = sel?.value;
-            const books = loadBooksFromStorage();
-            const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
-            if (book) await apiBorrowBook(book);
-        });
-    }
-
-    if (confirmarDevolucaoBtn) {
-        confirmarDevolucaoBtn.addEventListener('click', async () => {
-            await new Promise(r => setTimeout(r, 150));
-            const sel = document.getElementById('livro-emprestimo');
-            const id = sel?.value;
-            const books = loadBooksFromStorage();
-            const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
-            if (book) await apiReturnBook(book);
-        });
-    }
-
-    // --- fim API sync ---
 
     // Inicial → abre Catálogo (não Gerenciar!)
     // Ao carregar, mantenha todas as seções fechadas e só abra ao clicar em abas

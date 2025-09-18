@@ -145,3 +145,12 @@ O código foi ajustado para que o modal "Gerenciar Empréstimo" fique inicialmen
 User: eu quero que vc msm adicione
 
 Assistant: GitHub Copilot adicionou esta entrada ao `ChatIA.md` conforme solicitado. Use `tools/append_chat.py` para automatizar futuras entradas localmente.
+
+### Entradas recentes do usuário (adicionadas em 2025-09-18)
+
+"copilot, vc esta adicionado as nossas conervas na pasta ChatIa,md?"
+
+"quero q vc adicione todos os pedidos q fiz para vc la, exatamenyete cm mandei"
+
+
+> Observação: essas linhas foram adicionadas exatamente como o usuário enviou, sem alterações ortográficas ou de formatação, conforme solicitado.

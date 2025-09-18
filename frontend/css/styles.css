@@ -16,6 +16,14 @@
     --deep-brown: #6b4f3b;
     --moss-green: #2f5d3b;
     --wine: #6a2a2a;
+
+  --shadow-strong: 0 24px 60px rgba(31,40,33,0.14);
+  --shadow-soft: 0 10px 30px rgba(31,40,33,0.08);
+  --glass-tint: rgba(255,255,255,0.6);
+  --muted-text: #6b5a4c;
+  --heading-color: #3b2f2a;
+  --accent-glow: rgba(107,79,59,0.08);
+  --card-edge: linear-gradient(90deg, rgba(255,255,255,0.6), rgba(255,255,255,0.02));
 }
 
 /* Fundo com degradê suave e textura sutil sobreposto */
@@ -27,9 +35,21 @@ body {
     padding-top: calc(var(--header-height) + 10px); /* mais espaço para respiro */
 }
 
+/* subtle vignette and extra texture for depth */
+body::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(1200px 400px at 50% 10%, rgba(15,20,12,0.06), transparent 10%),
+              linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
 /* Header e nav spacing */
 header {
-    background: linear-gradient(180deg, var(--brand-color), #265034);
+    background: linear-gradient(180deg, rgba(47,93,59,0.98), rgba(38,80,52,0.96));
     color: #fff8f0;
     padding: 16px 30px;
     display: flex;
@@ -41,6 +61,8 @@ header {
     height: var(--header-height);
     z-index: 1200;
     box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    backdrop-filter: blur(4px) saturate(1.05);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 
 .header-content {
@@ -99,7 +121,10 @@ header {
     width: 70%;
     max-width: 900px;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    transition: box-shadow 180ms ease, transform 140ms ease;
 }
+
+#search-bar:focus { box-shadow: 0 12px 30px rgba(47,93,59,0.08); transform: translateY(-1px); }
 
 /* Remove logo styles (no logo used) */
 .logo { display: none; }
@@ -123,12 +148,11 @@ header {
     white-space: nowrap;
     border-radius: 999px; /* pílulas para ações e abas */
     padding: 10px 16px;
+    box-shadow: 0 6px 18px rgba(47,93,59,0.04);
+    border: 1px solid rgba(255,255,255,0.03);
 }
 
-.nav-btn:hover, .nav-btn.active {
-    background: #845a3f;
-    transform: translateY(-1px);
-}
+.nav-btn:hover { box-shadow: 0 18px 48px rgba(132,90,63,0.08); }
 
 /* COZY PALETTE & SOFT BACKGROUND */
 :root {
@@ -156,6 +180,16 @@ body, input, select, textarea, .book-author, .book-year { font-family: 'Roboto',
   border-radius: 14px;
   border: 1px solid rgba(107,79,59,0.06);
   box-shadow: 0 8px 28px rgba(107,79,59,0.06);
+  position: relative;
+  overflow: hidden;
+}
+.filters-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.02));
+  mix-blend-mode: overlay;
 }
 .filter-group label { display:block; margin-bottom:8px; font-weight:600; color:var(--deep-brown); }
 
@@ -166,7 +200,21 @@ body, input, select, textarea, .book-author, .book-year { font-family: 'Roboto',
 
 /* Book card polish & hover */
 .book-card{ background:linear-gradient(180deg,#fffefc,#fdf9f5); border-radius:16px; border:1px solid rgba(107,79,59,0.06); box-shadow:0 14px 40px rgba(47,93,59,0.06); transition:transform .22s ease, box-shadow .22s ease; }
-.book-card:hover{ transform:translateY(-8px) scale(1.02); box-shadow:0 28px 70px rgba(47,93,59,0.10); }
+.book-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: var(--shadow-strong);
+}
+.book-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 6px;
+  width: 48px;
+  background: var(--card-edge);
+  opacity: 0.6;
+  border-top-left-radius: 18px;
+}
 .book-card .status-wrap{ position:absolute; top:12px; left:12px; }
 .book-card{ position:relative; overflow:visible; }
 
@@ -184,7 +232,7 @@ body, input, select, textarea, .book-author, .book-year { font-family: 'Roboto',
     border-top: 1px solid rgba(107,79,59,0.04);
     margin-top: 28px;
 }
-.site-footer p { margin:0 0 6px; font-style: italic; }
+.site-footer p { margin:0 0 6px; font-style: italic; color: rgba(83,68,56,0.9); }
 
 /* Pequenas melhorias de ícones e espaçamentos */
 .footer-icons { font-size: 18px; opacity: 0.9; }
@@ -194,240 +242,8 @@ body, input, select, textarea, .book-author, .book-year { font-family: 'Roboto',
     background-image: linear-gradient(180deg, #fffefc, #fbfaf8), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23faf6f0'/%3E%3Cpath d='M0 0 L200 0 L200 200 L0 200 Z' fill='none'/%3E%3C/svg%3E");
     background-repeat: repeat;
     background-size: cover;
-}
-
-body {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    margin: 0;
-    background: var(--muted-bg);
-    padding-top: calc(var(--header-height) + 10px); /* mais espaço para respiro */
-}
-
-header {
-    background: linear-gradient(180deg, var(--brand-color), #265034);
-    color: #fff8f0;
-    padding: 16px 30px;
-    display: flex;
-    flex-direction: column;
-    position: fixed; /* header fixo */
-    top: 0;
-    left: 0;
-    right: 0;
-    height: var(--header-height);
-    z-index: 1200;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-/* Centered header variant */
-.header-centered {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 10px;
-}
-
-/* Nav centered under title */
-.nav-centered {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 6px;
-}
-
-#search-bar {
-    padding: 10px 14px;
-    border-radius: 999px;
-    border: none;
-    width: 70%;
-    max-width: 900px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
-}
-
-/* Remove logo styles (no logo used) */
-.logo { display: none; }
-
-.main-nav {
-    margin-top: 8px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap; /* permite que as "abas" quebrem linha sem sobreposição */
-}
-
-.nav-btn {
-    background: var(--accent-color);
-    color: #fff8f0;
-    border: none;
-    padding: 9px 14px;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.25s, transform 0.12s;
-    white-space: nowrap;
-    border-radius: 999px; /* pílulas para ações e abas */
-    padding: 10px 16px;
-}
-
-.nav-btn:hover, .nav-btn.active {
-    background: #845a3f;
-    transform: translateY(-1px);
-}
-
-/* COZY PALETTE & SOFT BACKGROUND */
-:root {
-  --cream: #fbf5ec;
-  --beige: #efe6d8;
-  --light-brown: #d9c7b3;
-  --warm-brown: #b98c66;
-  --deep-brown: #6b4f3b;
-  --moss-green: #2f5d3b;
-  --wine: #6a2a2a;
-}
-body {
-  background: linear-gradient(180deg, var(--cream), #fff6e8 40%, var(--beige));
-  background-attachment: fixed;
-}
-
-/* Fonts — cabeçalho serifado, corpo sans */
-h1, h2, h3, .book-title { font-family: 'Merriweather', serif; }
-body, input, select, textarea, .book-author, .book-year { font-family: 'Roboto', sans-serif; }
-
-/* Sidebar filters in a card */
-.filters-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(249,244,238,0.95));
-  padding: 18px;
-  border-radius: 14px;
-  border: 1px solid rgba(107,79,59,0.06);
-  box-shadow: 0 8px 28px rgba(107,79,59,0.06);
-}
-.filter-group label { display:block; margin-bottom:8px; font-weight:600; color:var(--deep-brown); }
-
-/* Status pills */
-.book-status{ display:inline-block; padding:6px 10px; border-radius:999px; font-weight:600; font-size:12px; }
-.book-status.disponivel{ background:rgba(47,93,59,0.12); color:var(--moss-green); border:1px solid rgba(47,93,59,0.08); }
-.book-status.emprestado{ background:rgba(170,70,60,0.09); color:#b44f3a; border:1px solid rgba(170,70,60,0.08); }
-
-/* Book card polish & hover */
-.book-card{ background:linear-gradient(180deg,#fffefc,#fdf9f5); border-radius:16px; border:1px solid rgba(107,79,59,0.06); box-shadow:0 14px 40px rgba(47,93,59,0.06); transition:transform .22s ease, box-shadow .22s ease; }
-.book-card:hover{ transform:translateY(-8px) scale(1.02); box-shadow:0 28px 70px rgba(47,93,59,0.10); }
-.book-card .status-wrap{ position:absolute; top:12px; left:12px; }
-.book-card{ position:relative; overflow:visible; }
-
-/* Header refinamentos */
-.brand-with-icon h1{ color:var(--deep-brown); letter-spacing:0.2px; }
-.header-content{ gap:8px; }
-#search-bar{ width:62%; max-width:760px; }
-
-/* Rodapé acolhedor */
-.site-footer {
-    background: linear-gradient(180deg, rgba(239,230,220,0.8), rgba(245,240,235,0.95));
-    padding: 20px 24px;
-    text-align: center;
-    color: #5b4b3f;
-    border-top: 1px solid rgba(107,79,59,0.04);
-    margin-top: 28px;
-}
-.site-footer p { margin:0 0 6px; font-style: italic; }
-
-/* Pequenas melhorias de ícones e espaçamentos */
-.footer-icons { font-size: 18px; opacity: 0.9; }
-
-/* Modal content with paper texture */
-.modal-content {
-    background-image: linear-gradient(180deg, #fffefc, #fbfaf8), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23faf6f0'/%3E%3Cpath d='M0 0 L200 0 L200 200 L0 200 Z' fill='none'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: cover;
-}
-
-body {
-    font-family: 'Georgia', 'Times New Roman', serif;
-    margin: 0;
-    background: var(--muted-bg);
-    padding-top: calc(var(--header-height) + 10px); /* mais espaço para respiro */
-}
-
-header {
-    background: linear-gradient(180deg, var(--brand-color), #265034);
-    color: #fff8f0;
-    padding: 16px 30px;
-    display: flex;
-    flex-direction: column;
-    position: fixed; /* header fixo */
-    top: 0;
-    left: 0;
-    right: 0;
-    height: var(--header-height);
-    z-index: 1200;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-}
-
-.header-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-/* Centered header variant */
-.header-centered {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 10px;
-}
-
-/* Nav centered under title */
-.nav-centered {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 6px;
-}
-
-#search-bar {
-    padding: 10px 14px;
-    border-radius: 999px;
-    border: none;
-    width: 70%;
-    max-width: 900px;
-    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
-}
-
-/* Remove logo styles (no logo used) */
-.logo { display: none; }
-
-.main-nav {
-    margin-top: 8px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap; /* permite que as "abas" quebrem linha sem sobreposição */
-}
-
-.nav-btn {
-    background: var(--accent-color);
-    color: #fff8f0;
-    border: none;
-    padding: 9px 14px;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.25s, transform 0.12s;
-    white-space: nowrap;
-    border-radius: 999px; /* pílulas para ações e abas */
-    padding: 10px 16px;
-}
-
-.nav-btn:hover, .nav-btn.active {
-    background: #845a3f;
-    transform: translateY(-1px);
+    border-radius: 20px;
+    box-shadow: 0 30px 60px rgba(18,22,18,0.12);
 }
 
 /* FINAL TWEAKS: Aconchego, tipografia e texturas */
@@ -444,7 +260,7 @@ body {
 
 /* Brand icon container */
 .brand-with-icon svg { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 4px; }
-.brand-with-icon h1 { margin-left: 4px; font-size: 28px; }
+.brand-with-icon h1 { margin-left: 4px; font-size: 28px; color: #7b5f49; }
 
 /* Inputs and controls softened */
 input[type="text"], input[type="number"], input[type="date"], textarea, select {
@@ -452,7 +268,10 @@ input[type="text"], input[type="number"], input[type="date"], textarea, select {
   border: 1px solid rgba(107,79,59,0.08);
   padding: 10px 12px;
   border-radius: 12px;
+  transition: box-shadow 140ms ease, transform 120ms ease;
 }
+
+input[type="text"]:focus, textarea:focus, select:focus { transform: translateY(-1px); }
 
 /* Buttons: principal e secundário */
 .button {
@@ -461,9 +280,13 @@ input[type="text"], input[type="number"], input[type="date"], textarea, select {
   color: #fffefc;
   padding: 10px 16px;
   border-radius: 999px;
-  box-shadow: 0 8px 22px rgba(47,93,59,0.08);
+  box-shadow: 0 10px 28px rgba(39,60,43,0.06);
+  border: 1px solid rgba(255,255,255,0.02);
+  transition: transform 120ms ease, box-shadow 160ms ease, filter 120ms ease;
 }
-.button.secondary { background: #8e7a6b; }
+.button:hover { transform: translateY(-2px); box-shadow: 0 18px 42px rgba(39,60,43,0.08); }
+.button:active { transform: translateY(0); }
+.button.secondary { background: linear-gradient(180deg,#8e7a6b,#796258); }
 
 /* Status pill refinements (usable in JS by adding class book-status) */
 .book-status { font-size: 12px; padding: 6px 10px; border-radius: 999px; display:inline-block; }
@@ -476,9 +299,13 @@ input[type="text"], input[type="number"], input[type="date"], textarea, select {
 /* Ensure filters-card spacing inside sidebar */
 .sidebar .filters-card { margin: 6px; }
 
+/* Action buttons group consistent spacing */
+.action-buttons { display:flex; justify-content:center; gap:12px; align-items:center; }
+
 /* subtle transition for nav buttons */
 .nav-btn { transition: transform 0.12s ease, box-shadow 0.16s ease; }
-.nav-btn.active { box-shadow: 0 12px 36px rgba(107,79,59,0.08); }
+.nav-btn.active { position: relative; }
+.nav-btn.active::after { content: ''; position: absolute; height: 4px; left: 12%; right: 12%; bottom: -8px; background: rgba(255,255,255,0.06); border-radius: 8px; }
 
 /* small responsive polish */
 @media (max-width: 900px) {
@@ -583,3 +410,278 @@ input[type="text"], input[type="number"], input[type="date"], textarea, select {
     #modal-detalhes .modal-content img#modal-capa { width: 140px; flex: none; }
     #modal-detalhes .modal-content .details { width: 100%; }
 }
+
+/* POPOVER (abinha) — visual elegante e integrada aos cards */
+.popover-details {
+  position: absolute;
+  z-index: 2500;
+  /* fundo claro com leve transparência para destacar sem destoar */
+  background: rgba(255, 255, 250, 0.95);
+  border: 1px solid rgba(30,30,30,0.06);
+  box-shadow: 0 18px 40px rgba(17,24,32,0.10), 0 6px 18px rgba(17,24,32,0.06);
+  border-radius: 16px;
+  padding: 20px; /* espaço interno generoso */
+  font-family: 'Roboto', sans-serif;
+  color: #2b2b2b;
+  box-sizing: border-box;
+
+  /* largura mais generosa e responsiva; prefere 80% do container mas limitada por clamp */
+  width: clamp(320px, 80%, 520px);
+  max-width: 90vw;
+
+  /* centralizar por padrão em relação ao elemento pai (se JS não posicionar explicitamente) */
+  left: 50%;
+  transform: translate(-50%, 10px) scale(0.995);
+  transform-origin: center top;
+
+  /* permitir crescimento vertical e evitar cortes de texto */
+  min-height: 100px;
+  max-height: calc(90vh - 80px);
+  overflow: auto;
+
+  /* animação suave: fade-in + slide de cima para baixo */
+  opacity: 0;
+  transition: all 300ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popover-details.show {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.popover-details::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  bottom: -6px;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%) rotate(45deg);
+  background: inherit;
+  border-left: 1px solid rgba(30,30,30,0.06);
+  border-bottom: 1px solid rgba(30,30,30,0.06);
+}
+
+.popover-details .popover-title {
+  color: #333;
+  font-weight: 800;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+/* Refinamento final da popover de detalhes para evitar barra lateral grande e melhorar legibilidade */
+.popover-details {
+  /* largura mínima e mais generosa para leitura; em telas pequenas será redefinida abaixo */
+  min-width: 400px; /* pedido: ao menos 400px quando houver espaço */
+  width: min(80%, 520px); /* preferir 80% do card, limitada a 520px */
+
+  /* centralizar em relação ao cartão por padrão */
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, 8px) scale(1);
+
+  /* evitar rolagem horizontal e permitir só rolagem vertical quando necessário */
+  overflow-x: hidden;
+  overflow-y: visible; /* comportamento padrão; descrição terá overflow controlado */
+}
+
+/* descrição ocupa o espaço disponível e faz scroll vertical se ultrapassar a altura máxima */
+.popover-details .popover-descricao {
+  max-height: calc(70vh - 160px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  line-height: 1.6; /* leitura confortável */
+  word-break: break-word; /* evita overflow por palavras longas */
+}
+
+/* garantir que os botões fiquem sempre após o conteúdo e visíveis (não dentro do scroll) */
+.popover-details .action-buttons {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* botões uniformes */
+.popover-details .action-buttons .button,
+.popover-details .action-buttons button {
+  height: 44px;
+  min-width: 120px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* manter botão excluir em destaque, mesmo estilo */
+.popover-details .action-buttons .btn-excluir,
+.popover-details .action-buttons button.btn-excluir {
+  background: linear-gradient(180deg, #e07a7a, #c64b4b);
+  box-shadow: 0 8px 18px rgba(198,75,75,0.10);
+}
+
+/* Responsividade: em telas pequenas a popover ocupa a largura do card (ou viewport) e não força min-width */
+@media (max-width: 620px) {
+  .popover-details {
+    min-width: 0;
+    width: calc(100% - 32px);
+    left: 50%;
+    transform: translate(-50%, 6px) scale(1);
+    padding: 16px;
+  }
+  .popover-details .popover-descricao { max-height: calc(60vh - 140px); }
+  .popover-details .action-buttons { flex-wrap: wrap; }
+  .popover-details .action-buttons .button,
+  .popover-details .action-buttons button { flex: 1 1 48%; min-width: 0; }
+}
+
+/* garantir que não haja barra de rolagem lateral indesejada no próprio componente */
+.popover-details, .popover-details * { box-sizing: border-box; }
+
+/* --- ENHANCED AESTHETIC LAYER (additions only) --- */
+
+/* subtle vignette and extra texture for depth */
+body::before {
+  content: '';
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(1200px 400px at 50% 10%, rgba(15,20,12,0.06), transparent 10%),
+              linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
+/* Header: soft glass effect and larger visual weight */
+header {
+  background: linear-gradient(180deg, rgba(47,93,59,0.98), rgba(38,80,52,0.96));
+  backdrop-filter: blur(4px) saturate(1.05);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Search bar refinement */
+#search-bar {
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.06), 0 6px 18px rgba(47,93,59,0.04);
+  transition: box-shadow 180ms ease, transform 140ms ease;
+}
+
+#search-bar:focus { box-shadow: 0 12px 30px rgba(47,93,59,0.08); transform: translateY(-1px); }
+
+/* Nav buttons: subtle glass border and hover glow */
+.nav-btn {
+  box-shadow: 0 6px 18px rgba(47,93,59,0.04);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.nav-btn:hover { box-shadow: 0 18px 48px rgba(132,90,63,0.08); }
+
+/* Filters card: slightly elevated with inset sheen */
+.filters-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.filters-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.02));
+  mix-blend-mode: overlay;
+}
+
+/* Book cards: richer layered shadows and subtle edge highlight */
+.book-card {
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease;
+  padding: 14px;
+  border-radius: 18px;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(253,249,244,0.96));
+  border: 1px solid rgba(107,79,59,0.06);
+}
+
+.book-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: var(--shadow-strong);
+}
+
+.book-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 6px;
+  width: 48px;
+  background: var(--card-edge);
+  opacity: 0.6;
+  border-top-left-radius: 18px;
+}
+
+/* Book cover and title improvements */
+.book-cover { border-radius: 14px; transition: transform 220ms ease; }
+.book-card:hover .book-cover { transform: translateY(-6px) scale(1.01); }
+.book-title { font-size: 14px; font-weight: 700; color: var(--heading-color); letter-spacing: .2px; }
+.book-author { color: var(--muted-text); font-size: 13px; }
+
+/* Buttons: tactile depth, consistent sizing and hover states */
+.button {
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 28px rgba(39,60,43,0.06);
+  border: 1px solid rgba(255,255,255,0.02);
+  transition: transform 120ms ease, box-shadow 160ms ease, filter 120ms ease;
+}
+
+.button:hover { transform: translateY(-2px); box-shadow: 0 18px 42px rgba(39,60,43,0.08); }
+.button:active { transform: translateY(0); }
+.button.secondary { background: linear-gradient(180deg,#8e7a6b,#796258); }
+
+/* Action buttons group consistent spacing */
+.action-buttons { display:flex; justify-content:center; gap:12px; align-items:center; }
+
+/* Modal content polish (keeps existing layout but refines visual) */
+.modal-content {
+  border-radius: 20px;
+  background: linear-gradient(180deg,#fffefc,#fbfaf8);
+  box-shadow: 0 30px 60px rgba(18,22,18,0.12);
+}
+
+/* Popover subtle blur backdrop for focus */
+.popover-details { backdrop-filter: blur(6px) saturate(1.02); }
+
+/* smoother show animation for popover/cards */
+.popover-details.show, .book-card:hover { transition-timing-function: cubic-bezier(.15,.9,.3,1); }
+
+/* Footer: soft divider and lighter text */
+.site-footer { border-top: 1px solid rgba(107,79,59,0.06); }
+.site-footer p { color: rgba(83,68,56,0.9); }
+
+/* tiny decorative underline under nav when active */
+.nav-btn.active { position: relative; }
+.nav-btn.active::after { content: ''; position: absolute; height: 4px; left: 12%; right: 12%; bottom: -8px; background: rgba(255,255,255,0.06); border-radius: 8px; }
+
+/* micro-interactions for form controls */
+input[type="text"], input[type="number"], textarea, select { transition: box-shadow 140ms ease, transform 120ms ease; }
+input[type="text"]:focus, textarea:focus, select:focus { transform: translateY(-1px); }
+
+/* subtle keyframe for gentle entrance */
+@keyframes gentle-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.998); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.popover-details.show { animation: gentle-pop 260ms cubic-bezier(.2,.9,.2,1); }
+
+/* ensure responsiveness of enhancements */
+@media (max-width: 900px) {
+  .book-card { border-radius: 14px; }
+  .book-title { font-size: 13px; }
+}
+
+/* --- end of enhancement layer --- */
