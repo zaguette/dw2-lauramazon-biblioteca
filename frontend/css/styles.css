@@ -643,45 +643,186 @@ header {
 .button:active { transform: translateY(0); }
 .button.secondary { background: linear-gradient(180deg,#8e7a6b,#796258); }
 
-/* Action buttons group consistent spacing */
-.action-buttons { display:flex; justify-content:center; gap:12px; align-items:center; }
-
-/* Modal content polish (keeps existing layout but refines visual) */
-.modal-content {
-  border-radius: 20px;
-  background: linear-gradient(180deg,#fffefc,#fbfaf8);
-  box-shadow: 0 30px 60px rgba(18,22,18,0.12);
+/* Sidebar actions: stack buttons vertically under filters */
+.sidebar-actions {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+}
+.sidebar-actions .button {
+    width: 100%;
+    justify-content: center;
 }
 
-/* Popover subtle blur backdrop for focus */
-.popover-details { backdrop-filter: blur(6px) saturate(1.02); }
-
-/* smoother show animation for popover/cards */
-.popover-details.show, .book-card:hover { transition-timing-function: cubic-bezier(.15,.9,.3,1); }
-
-/* Footer: soft divider and lighter text */
-.site-footer { border-top: 1px solid rgba(107,79,59,0.06); }
-.site-footer p { color: rgba(83,68,56,0.9); }
-
-/* tiny decorative underline under nav when active */
-.nav-btn.active { position: relative; }
-.nav-btn.active::after { content: ''; position: absolute; height: 4px; left: 12%; right: 12%; bottom: -8px; background: rgba(255,255,255,0.06); border-radius: 8px; }
-
-/* micro-interactions for form controls */
-input[type="text"], input[type="number"], textarea, select { transition: box-shadow 140ms ease, transform 120ms ease; }
-input[type="text"]:focus, textarea:focus, select:focus { transform: translateY(-1px); }
-
-/* subtle keyframe for gentle entrance */
-@keyframes gentle-pop {
-  from { opacity: 0; transform: translateY(6px) scale(0.998); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+/* Book grid and card consistency: ensure newly added books align with same dimensions */
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+    align-items: start;
 }
-.popover-details.show { animation: gentle-pop 260ms cubic-bezier(.2,.9,.2,1); }
-
-/* ensure responsiveness of enhancements */
-@media (max-width: 900px) {
-  .book-card { border-radius: 14px; }
-  .book-title { font-size: 13px; }
+.book-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: linear-gradient(180deg,#fff,#fffefc);
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(20,20,20,0.06);
+    min-height: 340px; /* mantém altura mínima consistente */
+    box-sizing: border-box;
+}
+.book-card .book-cover {
+    width: 100%;
+    height: 220px; /* fixar altura para evitar variações */
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: block; /* evita espaço inline de imagem */
+    background: #f4f4f6; /* cor de fallback enquanto a imagem carrega */
 }
 
-/* --- end of enhancement layer --- */
+/* meta container ocupa espaço fixo abaixo da imagem para títulos/autores/status */
+.book-card .meta {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+}
+
+.book-title {
+    text-align: center;
+    font-size: 16px;
+    margin: 6px 0 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+}
+
+.book-author {
+    color: #6b6b6b;
+    font-size: 13px;
+    text-align: center;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.book-year { font-size: 12px; color:#8a8a8a; margin-top:6px; }
+.book-status { margin-top:8px; padding:6px 10px; border-radius:999px; font-size:12px; }
+
+/* Se ainda houver conteúdo que empurre altura, garantir alinhamento no topo do grid */
+.book-grid { align-items: start; }
+
+/* Ensure all grid items have equal height so cards don't appear menores */
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+    align-items: start;
+    grid-auto-rows: 1fr; /* make rows equal height */
+}
+
+.book-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    background: linear-gradient(180deg,#fff,#fffefc);
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(20,20,20,0.06);
+    min-height: 340px;
+    height: 100%; /* fill the grid row */
+    box-sizing: border-box;
+}
+
+.book-card .book-cover {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: block;
+    background: #f4f4f6;
+    flex-shrink: 0; /* prevent shrinking */
+}
+
+.book-card .meta {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+}
+
+/* Toast notifications */
+#toast-container {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 10030;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.toast {
+    pointer-events: auto;
+    background: rgba(16,185,129,0.95);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    font-weight: 600;
+}
+.toast.error { background: rgba(220,38,38,0.95); }
+
+.modal { z-index: 2600; }
+
+/* Falling leaves decorative effect */
+.ui-leaf-container { pointer-events: none; position: fixed; inset: 0; overflow: visible; z-index: 9999; }
+.ui-falling-leaf {
+    position: absolute;
+    top: -10vh;
+    width: 28px;
+    height: 18px;
+    background: linear-gradient(180deg, #4caf50, #2e7d32);
+    border-radius: 8px 8px 10px 10px;
+    opacity: 0.95;
+    transform-origin: center;
+    box-shadow: 0 6px 12px rgba(31,64,35,0.12);
+    animation-name: leaf-fall, leaf-rotate, leaf-drift;
+    animation-duration: 2000ms, 2000ms, 2000ms;
+    animation-timing-function: linear, ease-in-out, ease-in-out;
+    animation-iteration-count: 1, infinite, 1;
+}
+
+@keyframes leaf-fall {
+    0% { transform: translateY(-12vh) translateX(0) rotate(0deg); opacity: 0.95; }
+    30% { opacity: 0.98; }
+    100% { transform: translateY(110vh) translateX(var(--leaf-drift, 0px)) rotate(360deg); opacity: 0.9; }
+}
+@keyframes leaf-rotate {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+    100% { transform: rotate(360deg); }
+}
+@keyframes leaf-drift {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(calc(var(--leaf-drift) / 2)); }
+    100% { transform: translateX(var(--leaf-drift)); }
+}
+
+/* make animation durations configurable via inline style animation-duration if needed */
+
+/* ensure leaves render above header but below toasts */
+.ui-leaf-container { z-index: 10000; }

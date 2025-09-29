@@ -9,6 +9,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const SORT_KEY = 'library_sort';
     const PAGE_SIZE = 10;
 
+    // API base (set window.API_BASE = 'http://localhost:8000' in browser devtools if backend is served elsewhere)
+    const API_BASE = window.API_BASE || '';
+
+    function isNumericId(id) {
+        return String(id).match(/^\d+$/);
+    }
+
+    // Try to sync local-only books (with non-numeric ids) to backend and replace their ids when backend returns one
+    async function trySyncLocalBooks() {
+        if (!API_BASE) return;
+        const books = loadBooksFromStorage();
+        let changed = false;
+        for (const b of books) {
+            if (!b) continue;
+            if (isNumericId(b.id)) continue; // already synced
+            try {
+                const resp = await fetch(API_BASE + '/books/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        titulo: b.titulo,
+                        autor: b.autor,
+                        ano: b.ano,
+                        genero: b.genero,
+                        isbn: b.isbn,
+                        capa: b.capa,
+                        status: b.status
+                    })
+                });
+                if (resp.ok) {
+                    const json = await resp.json();
+                    if (json && (json.id || json.id === 0)) {
+                        b.id = String(json.id);
+                        changed = true;
+                    }
+                }
+            } catch (err) {
+                console.warn('Sync book failed for', b.titulo, err);
+            }
+        }
+        if (changed) {
+            saveBooksToStorage(books);
+            showToast('Livros locais sincronizados com servidor', 'info');
+        }
+    }
+
     function loadBooksFromStorage() {
         const raw = localStorage.getItem(STORAGE_KEY);
         try {
@@ -132,10 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusClass = (book.status && String(book.status).toLowerCase().includes('emprest')) ? 'status-emprestado' : 'status-disponivel';
             card.innerHTML = `
                 <img src="${book.capa || 'https://via.placeholder.com/150x220?text=Livro'}" alt="Capa do livro" class="book-cover">
-                <h3 class="book-title">${book.titulo}</h3>
-                <p class="book-author">${book.autor || 'Autor não informado'}</p>
-                <p class="book-year">${book.ano || ''}</p>
-                <span class="book-status ${statusClass}">${book.status || 'desconhecido'}</span>
+                <div class="meta">
+                    <h3 class="book-title">${book.titulo}</h3>
+                    <p class="book-author">${book.autor || 'Autor não informado'}</p>
+                    <p class="book-year">${book.ano || ''}</p>
+                    <span class="book-status ${statusClass}">${book.status || 'desconhecido'}</span>
+                </div>
             `;
 
             // clicar no card abre uma abinha (popover) com detalhes rápidos e ações
@@ -571,6 +619,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
             saveBooksToStorage(books);
 
+            // se o livro possui um id numérico, tentar atualizar no backend
+            const numericId = Number(bookData.id);
+            if (!isNaN(numericId) && numericId > 0) {
+                try {
+                    await fetch(`/books/${numericId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            titulo: bookData.titulo,
+                            autor: bookData.autor,
+                            ano: bookData.ano,
+                            genero: bookData.genero,
+                            isbn: bookData.isbn,
+                            capa: bookData.capa,
+                            status: bookData.status
+                        })
+                    });
+                } catch (err) {
+                    console.warn('Não foi possível atualizar livro no backend:', err);
+                }
+            }
+
             // resetar estado de edição
             document.getElementById('livro-id').value = '';
             bookForm.reset();
@@ -596,13 +666,48 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         try {
+            // tentar persistir no backend; se ok, usar id retornado, senão fallback para local
+            if (API_BASE) {
+                try {
+                    const resp = await fetch(API_BASE + '/books/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            titulo: bookData.titulo,
+                            autor: bookData.autor,
+                            ano: bookData.ano,
+                            genero: bookData.genero,
+                            isbn: bookData.isbn,
+                            capa: bookData.capa,
+                            status: bookData.status
+                        })
+                    });
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        if (json && (json.id || json.id === 0)) {
+                            bookData.id = String(json.id);
+                        }
+                    } else {
+                        console.warn('Backend create returned', resp.status);
+                    }
+                } catch (err) {
+                    console.warn('Backend não respondeu ao criar livro, salvando localmente:', err);
+                }
+            }
+
             books.unshift(bookData);
             saveBooksToStorage(books);
+
+            // Trigger short leaves effect (2 seconds) when a new book is added
+            if (typeof startLeavesEffect === 'function') startLeavesEffect(2000, 150);
 
             bookForm.reset();
             const modalNovoLivro = document.getElementById('modal-novo-livro');
             if (modalNovoLivro) fecharModal(modalNovoLivro);
             applyFiltersAndRender(1);
+
+            // try to sync other local books in background
+            trySyncLocalBooks();
         } catch (err) {
             console.error('Erro ao salvar em localStorage', err);
             alert('Erro ao salvar livro no armazenamento local.');
@@ -614,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmarDevolucaoBtn = document.getElementById('confirmar-devolucao');
 
     if (confirmarEmprestimoBtn) {
-        confirmarEmprestimoBtn.addEventListener('click', () => {
+        confirmarEmprestimoBtn.addEventListener('click', async () => {
             const sel = document.getElementById('livro-emprestimo');
             const id = sel?.value;
             const nome = (document.getElementById('nome-pessoa')?.value || '').trim();
@@ -641,15 +746,44 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBooksToStorage(books);
             applyFiltersAndRender(1);
             updateReports();
-            alert('Empréstimo registrado');
+
+            // tentar persistir no backend se o id for numérico
+            const numericId = Number(book.id);
+            if (API_BASE && !isNaN(numericId) && numericId > 0) {
+                try {
+                    const resp = await fetch(API_BASE + `/books/${numericId}/borrow`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            nome: entry.nome,
+                            data_emprestimo: entry.data_emprestimo,
+                            data_prev_devolucao: entry.data_prev_devolucao
+                        })
+                    });
+                    if (!resp.ok) {
+                        console.warn('Backend borrow falhou:', await resp.text());
+                        showToast('Empréstimo registrado localmente, falha ao sincronizar com servidor', 'error');
+                    }
+                } catch (err) {
+                    console.warn('Erro ao chamar backend para borrow:', err);
+                    alert('Empréstimo registrado localmente, sem sincronização com servidor.');
+                }
+            }
+
+            // fechar modal e animar
+            const modalEmprestimoEl = document.getElementById('modal-emprestimo');
+            if (modalEmprestimoEl) fecharModal(modalEmprestimoEl);
+            // curto efeito de folhas por 2 segundos
+            if (typeof startLeavesEffect === 'function') startLeavesEffect(2000, 150);
         });
     }
 
     if (confirmarDevolucaoBtn) {
-        confirmarDevolucaoBtn.addEventListener('click', () => {
+        confirmarDevolucaoBtn.addEventListener('click', async () => {
             const sel = document.getElementById('livro-emprestimo');
             const id = sel?.value;
             const dataDev = document.getElementById('data-devolucao')?.value || new Date().toISOString();
+            const usuario = (document.getElementById('nome-pessoa')?.value || '').trim() || null;
             if (!id) { alert('Selecione um livro'); return; }
             const books = loadBooksFromStorage();
             const book = books.find(b => (b.id === id) || (b.isbn === id) || (b.titulo === id));
@@ -675,7 +809,30 @@ document.addEventListener('DOMContentLoaded', () => {
             saveBooksToStorage(books);
             applyFiltersAndRender(1);
             updateReports();
-            alert('Devolução registrada');
+
+            // persistir devolução no backend se possível
+            const numericId = Number(book.id);
+            if (API_BASE && !isNaN(numericId) && numericId > 0) {
+                try {
+                    const resp = await fetch(API_BASE + `/books/${numericId}/return`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data_devolucao: entry.data_devolucao, usuario })
+                    });
+                    if (!resp.ok) {
+                        console.warn('Backend return falhou:', await resp.text());
+                        showToast('Devolução registrada localmente, falha ao sincronizar com servidor', 'error');
+                    }
+                } catch (err) {
+                    console.warn('Erro ao chamar backend para return:', err);
+                    alert('Devolução registrada localmente, sem sincronização com servidor.');
+                }
+            }
+
+            const modalEmprestimoEl = document.getElementById('modal-emprestimo');
+            if (modalEmprestimoEl) fecharModal(modalEmprestimoEl);
+            // curto efeito de folhas por 2 segundos
+            if (typeof startLeavesEffect === 'function') startLeavesEffect(2000, 150);
         });
     }
 
@@ -885,8 +1042,119 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ===== Enhancements: add-book placement, leaves effect and modal post-actions =====
+    (function enhanceUI() {
+        const addBtn = document.getElementById('add-book-btn');
+        const filtersCard = document.querySelector('.filters-card');
+        const sidebarActions = document.querySelector('.sidebar-actions');
+        // Se já existe um bloco dedicado (sidebar-actions), não mover o botão — apenas garantir a classe de estilo
+        if (addBtn) {
+            if (sidebarActions && addBtn.parentElement !== sidebarActions) {
+                sidebarActions.appendChild(addBtn);
+            }
+            addBtn.classList.add('sidebar-add-btn');
+        }
+
+        // abrir modal Novo Livro ao clicar no botão
+        if (addBtn) {
+            addBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // resetar formulário para criação
+                if (bookForm) { bookForm.reset(); }
+                const idInput = document.getElementById('livro-id');
+                if (idInput) idInput.value = '';
+                abrirModal(document.getElementById('modal-novo-livro'));
+                // animação decorativa de folhas por 2 segundos
+                if (typeof startLeavesEffect === 'function') startLeavesEffect(2000, 150);
+            });
+        }
+
+        // após confirmar empréstimo/devolução, fechar modal e disparar efeito visual (apenas efeito/fechamento visual)
+        const modalEmprestimoEl = document.getElementById('modal-emprestimo');
+        if (confirmarEmprestimoBtn) {
+            confirmarEmprestimoBtn.addEventListener('click', () => {
+                setTimeout(() => {
+                    if (modalEmprestimoEl) fecharModal(modalEmprestimoEl);
+                    populateEmprestimoSelect(loadBooksFromStorage());
+                    if (typeof startLeavesEffect === 'function') startLeavesEffect(2000, 150);
+                }, 300);
+            });
+        }
+        if (confirmarDevolucaoBtn) {
+            confirmarDevolucaoBtn.addEventListener('click', () => {
+                setTimeout(() => {
+                    if (modalEmprestimoEl) fecharModal(modalEmprestimoEl);
+                    populateEmprestimoSelect(loadBooksFromStorage());
+                    if (typeof startLeavesEffect === 'function') startLeavesEffect(2000, 150);
+                }, 300);
+            });
+        }
+
+        // helper: criar uma 'folha' animada e anexar ao container
+        window.createLeaf = function(container, lifetime = 2000) {
+            const leaf = document.createElement('div');
+            leaf.className = 'ui-falling-leaf';
+            const size = Math.floor(12 + Math.random() * 28);
+            leaf.style.width = size + 'px';
+            leaf.style.height = Math.max(10, Math.floor(size * 0.65)) + 'px';
+            // position across the viewport width
+            leaf.style.left = (2 + Math.random() * 96) + '%';
+            leaf.style.top = '-8vh';
+            leaf.style.opacity = (0.85 + Math.random() * 0.15).toString();
+            // random rotation
+            leaf.style.transform = `rotate(${Math.floor(Math.random() * 360)}deg)`;
+            // random horizontal drift between -40 and 40 px
+            const drift = Math.floor((Math.random() * 80) - 40);
+            leaf.style.setProperty('--leaf-drift', drift + 'px');
+            // small duration variance so leaves feel organic
+            const dur = Math.max(700, lifetime + Math.floor((Math.random() * 400) - 200));
+            leaf.style.animationDuration = dur + 'ms';
+            leaf.style.animationDelay = '0ms';
+            container.appendChild(leaf);
+            // cleanup after animation finishes
+            setTimeout(() => { leaf.remove(); }, dur + 300);
+        };
+
+        // start leaves effect: creates container and spawns leaves at interval for duration
+        window.startLeavesEffect = function(duration = 2000, intervalMs = 250) {
+            const container = document.createElement('div');
+            container.className = 'ui-leaf-container';
+            container.style.pointerEvents = 'none';
+            container.style.position = 'fixed';
+            container.style.inset = '0';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+
+            // spawn a small burst immediately and then at the interval until duration elapses
+            const burst = Math.max(3, Math.floor(duration / 300));
+            for (let i = 0; i < burst; i++) {
+                setTimeout(() => createLeaf(container, duration), i * 80);
+            }
+            const iv = setInterval(() => { createLeaf(container, duration); }, intervalMs);
+            setTimeout(() => {
+                clearInterval(iv);
+                // wait a bit to allow last leaves to finish their animations
+                setTimeout(() => { try { container.remove(); } catch(e){} }, duration + 400);
+            }, duration);
+        };
+    })();
+
+    // Simple toast helper
+    function showToast(message, type = 'info', timeout = 4000) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const el = document.createElement('div');
+        el.className = 'toast' + (type === 'error' ? ' error' : '');
+        el.textContent = message;
+        container.appendChild(el);
+        setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; }, timeout - 300);
+        setTimeout(() => { el.remove(); }, timeout);
+    }
+
     // Inicialização
     ensureCatalogControls();
     applyFiltersAndRender(1);
+    // tentar sincronizar livros locais ao backend em background
+    trySyncLocalBooks();
 
 });

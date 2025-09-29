@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.orm import Session
-from .models import Book, BookHistory
+from .models import Book, BookHistory, BookAction
 from .database import get_db
 from pydantic import BaseModel
 from datetime import datetime
@@ -23,6 +23,7 @@ class BorrowRequest(BaseModel):
 
 class ReturnRequest(BaseModel):
     data_devolucao: datetime | None = None
+    usuario: str | None = None
 
 @router.post('/books/')
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
@@ -78,6 +79,15 @@ def read_book(book_id: int, db: Session = Depends(get_db)):
             'data_prev_devolucao': h.data_prev_devolucao.isoformat() if h.data_prev_devolucao else None,
             'data_devolucao': h.data_devolucao.isoformat() if h.data_devolucao else None,
         })
+    # incluir ações (empréstimo/devolução)
+    actions = []
+    for a in book.actions:
+        actions.append({
+            'id': a.id,
+            'tipo': a.tipo,
+            'usuario': a.usuario,
+            'data_acao': a.data_acao.isoformat() if a.data_acao else None
+        })
     return {
         'id': book.id,
         'titulo': book.title,
@@ -86,7 +96,8 @@ def read_book(book_id: int, db: Session = Depends(get_db)):
         'genero': book.genre,
         'isbn': book.isbn,
         'status': 'disponível' if book.status else 'emprestado',
-        'history': history
+        'history': history,
+        'actions': actions
     }
 
 @router.put('/books/{book_id}')
@@ -133,9 +144,15 @@ def borrow_book(book_id: int, payload: BorrowRequest = Body(...), db: Session = 
     db.add(hist)
     # atualizar status do livro
     book.status = False
+
+    # registrar ação
+    action = BookAction(book_id=book.id, tipo='emprestimo', usuario=payload.nome, data_acao=data_emp)
+    db.add(action)
+
     db.commit()
     db.refresh(hist)
-    return {'detail': 'borrowed', 'history_id': hist.id}
+    db.refresh(action)
+    return {'detail': 'borrowed', 'history_id': hist.id, 'action_id': action.id}
 
 @router.post('/books/{book_id}/return')
 def return_book(book_id: int, payload: ReturnRequest = Body(...), db: Session = Depends(get_db)):
@@ -152,5 +169,10 @@ def return_book(book_id: int, payload: ReturnRequest = Body(...), db: Session = 
 
     hist.data_devolucao = payload.data_devolucao or datetime.utcnow()
     book.status = True
+
+    # registrar ação de devolução
+    action = BookAction(book_id=book.id, tipo='devolucao', usuario=payload.usuario or None, data_acao=hist.data_devolucao)
+    db.add(action)
+
     db.commit()
-    return {'detail': 'returned', 'history_id': hist.id}
+    return {'detail': 'returned', 'history_id': hist.id, 'action_id': action.id}

@@ -15,6 +15,7 @@ class Book(Base):
 
     # relacionamento para histórico de empréstimos
     history = relationship('BookHistory', back_populates='book', cascade='all, delete-orphan')
+    actions = relationship('BookAction', back_populates='book', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"<Book(title='{self.title}', author='{self.author}', year={self.year}, genre='{self.genre}', isbn='{self.isbn}', status={self.status})>"
@@ -33,3 +34,17 @@ class BookHistory(Base):
 
     def __repr__(self):
         return f"<BookHistory(book_id={self.book_id}, nome='{self.nome}', data_emprestimo={self.data_emprestimo})>"
+
+class BookAction(Base):
+    __tablename__ = 'book_actions'
+
+    id = Column(Integer, primary_key=True, index=True)
+    book_id = Column(Integer, ForeignKey('books.id', ondelete='CASCADE'))
+    tipo = Column(String)  # 'emprestimo' or 'devolucao'
+    usuario = Column(String, nullable=True)
+    data_acao = Column(DateTime)
+
+    book = relationship('Book', back_populates='actions')
+
+    def __repr__(self):
+        return f"<BookAction(book_id={self.book_id}, tipo='{self.tipo}', usuario='{self.usuario}', data_acao={self.data_acao})>"

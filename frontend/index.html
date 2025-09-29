@@ -60,6 +60,12 @@
                 <button class="button" id="aplicar-filtros">Aplicar Filtros</button>
                 <button class="button" id="limpar-filtros" style="background: #666; margin-top: 10px;">Limpar Filtros</button>
             </div>
+
+            <!-- Novo bloco: ações abaixo dos filtros (separado do card de filtros) -->
+            <div class="sidebar-actions" style="padding:12px; margin-top:12px; display:flex; gap:8px; align-items:center;">
+                <button class="button sidebar-add-btn" id="add-book-btn" aria-label="Adicionar novo livro" accesskey="n">Novo Livro</button>
+                <button class="button" id="open-emprestimo-btn" aria-label="Abrir modal de Empréstimo/Devolução">Empréstimo/Devolução</button>
+            </div>
         </aside>
 
         <main class="content-area">
@@ -70,10 +76,7 @@
                         <p>Nenhum livro encontrado. Adicione um novo livro ou ajuste os filtros.</p>
                     </div>
                 </div>
-                <div class="action-buttons">
-                    <button class="button" id="add-book-btn" aria-label="Adicionar novo livro" accesskey="n">Novo Livro</button>
-                    <button class="button" id="open-emprestimo-btn" aria-label="Abrir modal de Empréstimo/Devolução">Empréstimo/Devolução</button>
-                </div>
+                <!-- action-buttons block removed from here; buttons moved to sidebar -->
             </section>
 
             <!-- Gerenciar -->
@@ -229,6 +232,9 @@
             <div class="footer-icons">☕ 📚 🌿</div>
         </div>
     </footer>
+
+    <!-- Toast container for notifications -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <script src="js/main.js"></script>
 </body>
